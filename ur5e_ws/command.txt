@@ -1,0 +1,66 @@
+###### init ######
+# activate the workspace (ie: source it)
+source /opt/ros/noetic/setup.bash
+source devel/setup.bash
+
+###### Simulation ######
+# simulate the robot and environment in Gazebo
+roslaunch ur_gazebo ur5e_bringup.launch
+# use MoveIt for motion planning and control
+roslaunch ur5e_moveit_config moveit_planning_execution.launch sim:=true
+# finally visualize the whole process through RViz
+roslaunch ur5e_moveit_config moveit_rviz.launch
+
+###### Calibration ######
+roslaunch ur_calibration calibration_correction.launch robot_ip:=192.168.1.60 target_filename:="/home/robot/my_robot_calibration.yaml"
+
+###### Visualizing ######
+# launch the driver
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml
+# in another terminal run rviz for visualization
+roslaunch ur_robot_driver example_rviz.launch
+
+###### Controling ######
+rosrun ur_robot_driver test_move
+
+###### Control the robot using Moveit ######
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml
+roslaunch ur5e_moveit_config moveit_planning_execution.launch
+roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=/home/robot/ur5e_ws/src/universal_robot/ur5e_moveit_config/launch/moveit.rviz
+
+###### When adding new scripts files ######
+# addd description in CMakeLists.txt
+# catkin_make
+
+###### tool communication | Usesless ######
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml use_tool_communication:=true tool_voltage:=24 tool_parity:=0 tool_baud_rate:=115200 tool_stop_bits:=1 tool_rx_idle_chars:=1.5 tool_tx_idle_chars:=3.5 tool_device_name:=/tmp/ttyUR
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml use_tool_communication:=true tool_device_name:=/tmp/ttyUR tool_voltage:=24
+rosrun ur_robot_driver tool_communication
+
+###### Gripper ######
+
+sudo usermod -a -G dialout $USER
+dmesg | grep tty
+
+rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
+
+rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
+
+rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
+
+roslaunch robotiq_2f_85_gripper_visualization view_robotiq_2f_85.launch
+
+
+###### WORK FLOW ######
+source /opt/ros/noetic/setup.bash
+source devel/setup.bash
+
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml
+roslaunch ur_robot_driver example_rviz.launch
+
+sudo usermod -a -G dialout $USER
+dmesg | grep tty
+rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
+
+rosrun ur_robot_driver test_move
+rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
