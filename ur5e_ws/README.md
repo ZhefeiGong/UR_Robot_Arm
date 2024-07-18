@@ -13,3 +13,15 @@ catkin_make
 # activate the workspace (ie: source it)
 source devel/setup.bash
 ```
+
+# Use
+```sh
+##### after each change #####
+
+# build the workspace
+catkin_make
+
+# activate the workspace (ie: source it)
+source devel/setup.bash
+
+```
