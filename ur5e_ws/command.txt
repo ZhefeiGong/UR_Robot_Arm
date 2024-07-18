@@ -12,7 +12,7 @@ roslaunch ur5e_moveit_config moveit_planning_execution.launch sim:=true
 roslaunch ur5e_moveit_config moveit_rviz.launch
 
 ###### Calibration ######
-roslaunch ur_calibration calibration_correction.launch robot_ip:=192.168.1.60 target_filename:="/home/robot/my_robot_calibration.yaml"
+roslaunch ur_calibration calibration_correction.launch robot_ip:=192.168.1.60 target_filename:="/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml"
 
 ###### Visualizing ######
 # launch the driver
@@ -24,7 +24,7 @@ roslaunch ur_robot_driver example_rviz.launch
 rosrun ur_robot_driver test_move
 
 ###### Control the robot using Moveit ######
-roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
 roslaunch ur5e_moveit_config moveit_planning_execution.launch
 roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=/home/robot/ur5e_ws/src/universal_robot/ur5e_moveit_config/launch/moveit.rviz
 
@@ -33,8 +33,8 @@ roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=/home/robot/ur5e_ws
 # catkin_make
 
 ###### tool communication | Usesless ######
-roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml use_tool_communication:=true tool_voltage:=24 tool_parity:=0 tool_baud_rate:=115200 tool_stop_bits:=1 tool_rx_idle_chars:=1.5 tool_tx_idle_chars:=3.5 tool_device_name:=/tmp/ttyUR
-roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml use_tool_communication:=true tool_device_name:=/tmp/ttyUR tool_voltage:=24
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml use_tool_communication:=true tool_voltage:=24 tool_parity:=0 tool_baud_rate:=115200 tool_stop_bits:=1 tool_rx_idle_chars:=1.5 tool_tx_idle_chars:=3.5 tool_device_name:=/tmp/ttyUR
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml use_tool_communication:=true tool_device_name:=/tmp/ttyUR tool_voltage:=24
 rosrun ur_robot_driver tool_communication
 
 ###### Gripper ######
@@ -55,7 +55,7 @@ roslaunch robotiq_2f_85_gripper_visualization view_robotiq_2f_85.launch
 source /opt/ros/noetic/setup.bash
 source devel/setup.bash
 
-roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
 roslaunch ur_robot_driver example_rviz.launch
 
 sudo usermod -a -G dialout $USER
@@ -63,4 +63,6 @@ dmesg | grep tty
 rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
 
 rosrun ur_robot_driver test_move
+
 rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
+rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py

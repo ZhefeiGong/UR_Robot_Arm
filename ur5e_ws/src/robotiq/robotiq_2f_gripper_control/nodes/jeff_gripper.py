@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
 
 
-"""@package docstring
-
-Command-line interface for sending simple commands to a ROS node controlling a 2F gripper.
-
-This serves as an example for publishing messages on the 'Robotiq2FGripperRobotOutput' topic 
-using the 'Robotiq2FGripper_robot_output' msg type for sending commands to a 2F gripper.
-
-"""
+##################### Publisher #####################
 
 from __future__ import print_function
 
@@ -130,7 +123,7 @@ def publisher():
         rospy.sleep(0.1)
 
 
-
+##################### Listener #####################
 
 from std_msgs.msg import String
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input  as inputMsg
