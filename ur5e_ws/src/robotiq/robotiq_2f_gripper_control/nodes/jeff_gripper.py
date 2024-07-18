@@ -1,20 +1,67 @@
 #!/usr/bin/env python3
 
 
-##################### Publisher #####################
-
 from __future__ import print_function
 
-import roslib; roslib.load_manifest('robotiq_2f_gripper_control')
 import rospy
-from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output  as outputMsg
-from time import sleep
 
+import roslib; roslib.load_manifest('robotiq_2f_gripper_control')
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output  as outputMsg
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input  as inputMsg
+
+from time import sleep
+from std_msgs.msg import String
+
+# Python2 or Python3
 try:
     input = raw_input
 except NameError:
     pass
 
+
+"""
+##################### Publisher #####################
+rACT: First action to be made prior to any other actions, rACT bit will activate the Gripper. Clear rACT to reset the Gripper and clear
+fault status.
+l 0x0 - Deactivate Gripper.
+l 0x1 - Activate Gripper (must stay on after activation routine is completed).
+
+rGTO: The "Go To" action moves the Gripper fingers to the requested position using the configuration defined by the other registers,
+rGTO will engage motion while byte 3, 4 and 5 will determine aimed position, force and speed. The only motions performed without
+the rGTO bit are activation and automatic release routines.
+l 0x0 - Stop.
+l 0x1 - Go to requested position.
+
+rATR: Automatic Release routine action slowly opens the Gripper fingers until all motion axes reach their mechanical limits. After all
+motion is completed, the Gripper sends a fault signal and needs to be reactivated before any other motion is performed. The rATR bit
+overrides all other commands excluding the activation bit (rACT).
+l 0x0 - Normal.
+l 0x1 - Emergency auto-release.
+
+rARD: Auto-release direction. When auto-releasing, rARD commands the direction of the movement. The rARD bit should be set prior
+to or at the same time as the rATR bit, as the motion direction is set when the auto-release is initiated.
+l 0x0 - Closing auto-release
+l 0x1 - Opening auto-release
+
+rPR: POSITION REQUEST, This register is used to set the target position for the Gripper's fingers. The positions 0x00 and 0xFF correspond respectively to the fully
+opened and fully closed mechanical stops. For detailed finger trajectory, please refer to the Specifications section.
+l 0x00 - Open position, with 85 mm or 140 mm opening respectively
+l 0xFF - Closed
+l Opening / count: 0.4 mm (for 85 mm stroke) and 0.65 mm (for 140 mm stroke)
+
+rSP: SPEED, This register is used to set the Gripper closing or opening speed in real time, however, setting a speed will not initiate a motion.
+l 0x00 - Minimum speed
+l 0xFF - Maximum speed
+
+rFR: FORCE, The force setting defines the final gripping force for the Gripper. The force will fix the maximum current sent to the motor while in
+motion. If the current limit is exceeded, the fingers stop and trigger an object detection notification. Please refer to the Robot Input
+Registers & Status section for details on force control.
+l 0x00 - Minimum force
+l 0xFF - Maximum force
+
+"""
+
+# 
 def genCommand(char, command):
     """Update the command according to the character entered by the user."""
 
@@ -106,12 +153,14 @@ def askForCommand(command):
 
     return input(strAskForCommand)
 
+
 def publisher():
     """Main loop which requests new commands and publish them on the Robotiq2FGripperRobotOutput topic."""
+
     rospy.init_node('Robotiq2FGripperSimpleController')
 
     pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output)
-
+    
     command = outputMsg.Robotiq2FGripper_robot_output();
 
     while not rospy.is_shutdown():
@@ -123,10 +172,47 @@ def publisher():
         rospy.sleep(0.1)
 
 
+"""
 ##################### Listener #####################
+gACT: Activation status, echo of the rACT bit (activation bit).
+l 0x0 - Gripper reset.
+l 0x1 - Gripper activation.
 
-from std_msgs.msg import String
-from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input  as inputMsg
+gGTO: Action status, echo of the rGTO bit (go to bit).
+l 0x0 - Stopped (or performing activation / automatic release).
+l 0x1 - Go to Position Request.
+
+gSTA: Gripper status, returns the current status & motion of the Gripper fingers.
+l 0x00 - Gripper is in reset ( or automatic release ) state. See Fault Status if Gripper is activated.
+l 0x01 - Activation in progress.
+l 0x02 - Not used.
+l 0x03 - Activation is completed.
+
+gOBJ: Object detection status, is a built-in feature that provides information on possible object pick-up. Ignore if gGTO == 0.
+l 0x00 - Fingers are in motion towards requested position. No object detected.
+l 0x01 - Fingers have stopped due to a contact while opening before requested position. Object detected opening.
+l 0x02 - Fingers have stopped due to a contact while closing before requested position. Object detected closing.
+l 0x03 - Fingers are at requested position. No object detected or object has been loss / dropped.
+
+gFLT: Fault status returns general error messages that are useful for troubleshooting. Fault LED (red) is present on the Gripper chassis,
+LED can be blue, red or both and be solid or blinking.
+l 0x00 - No fault (LED is blue)
+l Priority faults (LED is blue)
+l 0x05 - Action delayed, activation (reactivation) must be completed prior to perfmoring the action.
+l 0x07 - The activation bit must be set prior to action.
+
+gPR: Echo of the requested position for the Gripper, value between 0x00 and 0xFF.
+l 0x00 - Full opening.
+l 0xFF - Full closing
+
+gPO: Actual position of the Gripper obtained via the encoders, value between 0x00 and 0xFF.
+l 0x00 - Fully opened.
+l 0xFF - Fully closed.
+
+gCU: The current is read instantaneously from the motor drive, value between 0x00 and 0xFF, approximate current equivalent is 10 *
+value read in mA.
+
+"""
 
 def printStatus(status):
     """Print the status string generated by the statusInterpreter function."""
@@ -205,14 +291,15 @@ def statusInterpreter(status):
     #gPO
     output += 'gPO = ' + str(status.gPO) + ': '
     output += 'Position of Fingers: ' + str(status.gPO) + '/255\n'
-
+    
     #gCU
     output += 'gCU = ' + str(status.gCU) + ': '
     output += 'Current of Fingers: ' + str(status.gCU * 10) + ' mA\n'
 
     return output
 
-if __name__ == '__main__':
-    publisher()
 
+if __name__ == '__main__':
+
+    publisher()
     Robotiq2FGripperStatusListener()
