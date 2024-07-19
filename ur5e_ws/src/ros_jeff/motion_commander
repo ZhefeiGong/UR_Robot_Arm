@@ -145,13 +145,13 @@ class MotionCommander:
 
         # create trajectory goal
         goal = FollowJointTrajectoryGoal()
-
+        
         # name the each joint
         goal.trajectory.joint_names = JOINT_NAMES
         
         # check the size of each list in the trajectory
         assert len(position_list)==len(velocity_list)==len(duration_list), "[ERROR] receive different sizes of each list in joint trajectory"
-
+        
         # append the joint-based trajectory 
         for i, position in enumerate(position_list):
             point = JointTrajectoryPoint()
@@ -159,7 +159,7 @@ class MotionCommander:
             point.velocities = velocity_list[i]
             point.time_from_start = rospy.Duration(duration_list[i])
             goal.trajectory.points.append(point)
-
+    
         # ask the user to confitm the following actions
         if self.is_verbose:
             self.ask_confirmation(position_list)

@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+import rospy
+from geometry_msgs.msg import PoseStamped
+
+def actual_tcp_pose_callback(data):
+    # Process the `actual_TCP_pose` data as required
+    print("Received actual_TCP_pose: ", data)
+
+def main():
+    rospy.init_node('actual_tcp_pose_subscriber')
+    rospy.Subscriber('actual_tcp_pose', PoseStamped, actual_tcp_pose_callback)
+    rospy.spin()
+
+if __name__ == '__main__':
+    main()
+
