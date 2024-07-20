@@ -124,6 +124,9 @@ class MotionCommander:
         self.joint_trajectory_controller = JOINT_TRAJECTORY_CONTROLLERS[joint_controller_index]
         self.cartesian_trajectory_controller = CARTESIAN_TRAJECTORY_CONTROLLERS[cartesian_controller_index]
 
+
+
+
     ###################### 🔥send the joint trajectory🔥 ######################
     def send_joint_trajectory(self, position_list=[], velocity_list=[], duration_list=[]):
         """Send a trajectory using the selected action server"""
@@ -272,6 +275,8 @@ class MotionCommander:
         srv.start_controllers = [target_controller]
         srv.strictness = SwitchControllerRequest.BEST_EFFORT
         self.switch_srv(srv)
+
+
 
 
 if __name__ == "__main__":

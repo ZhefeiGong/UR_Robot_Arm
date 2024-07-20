@@ -62,7 +62,8 @@ sudo usermod -a -G dialout $USER
 dmesg | grep tty
 rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
 
-rosrun ur_robot_driver test_move
+rosrun ur_robot_driver jeff_move
+rosrun ur_robot_driver jeff_listen
 
 rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
 rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py

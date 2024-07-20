@@ -1,17 +1,35 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from tf2_msgs.msg import TFMessage
+from sensor_msgs.msg import JointState
 
-def actual_tcp_pose_callback(data):
-    # Process the `actual_TCP_pose` data as required
-    print("Received actual_TCP_pose: ", data)
+################### Cartesian ###################
+def tf_callback(msg):
+    for transform in msg.transforms : 
+        print("[MSG] Frame ID : ", transform.header.frame_id)
+        print("[MSG] Child Frame ID : ", transform.header.frame_id)
+        print("[MSG] Translation : ", transform.transform.translation)
+        print("[MSG] Rotation : ", transform.transform.rotation)
 
-def main():
-    rospy.init_node('actual_tcp_pose_subscriber')
-    rospy.Subscriber('actual_tcp_pose', PoseStamped, actual_tcp_pose_callback)
+def tf_listener():
+    rospy.init_node('tf_listener')
+    rospy.Subscriber("tf", TFMessage, tf_callback)
     rospy.spin()
 
-if __name__ == '__main__':
-    main()
+################### Joint ###################
+def joint_callback(msg):
+    print("[MSG] Frame ID : ", msg.header.frame_id)
+    print("[MSG] Position : ", msg.position)
+    print("[MSG] Rotation : ", msg.velocity)
+    print("[MSG] Effort : ", msg.effort)
 
+def joint_listener():
+    rospy.init_node('joint_listener')
+    rospy.Subscriber("joint_states", JointState, joint_callback)
+    rospy.spin()
+
+
+if __name__ == "__main__":
+    tf_listener()
+    # joint_listener()

@@ -140,14 +140,13 @@ if(CATKIN_ENABLE_TESTING)
   endif()
 endif()
 
-
 install(TARGETS ur_robot_driver_plugin urcl_log_handler ur_robot_driver_node robot_state_helper dashboard_client controller_stopper_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-catkin_install_python(PROGRAMS scripts/tool_communication scripts/test_move scripts/jeff_move
+catkin_install_python(PROGRAMS scripts/tool_communication scripts/test_move scripts/jeff_move scripts/jeff_listen
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(DIRECTORY config launch resources
