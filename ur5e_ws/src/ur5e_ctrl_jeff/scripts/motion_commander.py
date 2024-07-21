@@ -22,6 +22,11 @@ from cartesian_control_msgs.msg import (
     CartesianTrajectoryPoint,
 )
 
+# 
+from ur5e_ctrl_jeff.msg import Robotiq2FGripper_robot_input  
+from cartesian_listener import CartesianStateListener
+from gripper_listener import GripperStateListener
+
 # Compatibility for python2 and python3
 if sys.version_info[0] < 3:
     input = raw_input
@@ -89,11 +94,100 @@ twist_controller :
     It commands the end-effector to move with specified linear and angular velocities, typically used for direct teleoperation or Cartesian space control.
 """
 
+# We set gripper into two situations : open or close.
+GRIPPER_SLEEP_INTERVAL = 0.1
+
+GRIPPER_OPEN = 0
+GRIPPER_CLSOE = 1
+
+"""
+rACT: First action to be made prior to any other actions, rACT bit will activate the Gripper. Clear rACT to reset the Gripper and clear
+fault status.
+l 0x0 - Deactivate Gripper.
+l 0x1 - Activate Gripper (must stay on after activation routine is completed).
+
+rGTO: The "Go To" action moves the Gripper fingers to the requested position using the configuration defined by the other registers,
+rGTO will engage motion while byte 3, 4 and 5 will determine aimed position, force and speed. The only motions performed without
+the rGTO bit are activation and automatic release routines.
+l 0x0 - Stop.
+l 0x1 - Go to requested position.
+
+rATR: Automatic Release routine action slowly opens the Gripper fingers until all motion axes reach their mechanical limits. After all
+motion is completed, the Gripper sends a fault signal and needs to be reactivated before any other motion is performed. The rATR bit
+overrides all other commands excluding the activation bit (rACT).
+l 0x0 - Normal.
+l 0x1 - Emergency auto-release.
+
+rARD: Auto-release direction. When auto-releasing, rARD commands the direction of the movement. The rARD bit should be set prior
+to or at the same time as the rATR bit, as the motion direction is set when the auto-release is initiated.
+l 0x0 - Closing auto-release
+l 0x1 - Opening auto-release
+
+rPR: POSITION REQUEST, This register is used to set the target position for the Gripper's fingers. The positions 0x00 and 0xFF correspond respectively to the fully
+opened and fully closed mechanical stops. For detailed finger trajectory, please refer to the Specifications section.
+l 0x00 - Open position, with 85 mm or 140 mm opening respectively
+l 0xFF - Closed
+l Opening / count: 0.4 mm (for 85 mm stroke) and 0.65 mm (for 140 mm stroke)
+
+rSP: SPEED, This register is used to set the Gripper closing or opening speed in real time, however, setting a speed will not initiate a motion.
+l 0x00 - Minimum speed
+l 0xFF - Maximum speed
+
+rFR: FORCE, The force setting defines the final gripping force for the Gripper. The force will fix the maximum current sent to the motor while in
+motion. If the current limit is exceeded, the fingers stop and trigger an object detection notification. Please refer to the Robot Input
+Registers & Status section for details on force control.
+l 0x00 - Minimum force
+l 0xFF - Maximum force
+"""
+
+class GripperCommander:
+    """A commander to control the 2f-85 Gripper"""
+
+    def __init__(self):
+        
+        # 
+        rospy.init_node('Robotiq2FGripperSimpleController')
+        self.gripper_pub = rospy.Publisher('Robotiq2FGripperRobotOutput', Robotiq2FGripper_robot_input)
+
+        #
+        self.gripper_activate()
+
+    def gripper_activate(self):
+        """Activate the gripper before utilizing"""
+
+        command = Robotiq2FGripper_robot_output();
+        command.rACT = 1    # Activate the gripper
+        command.rGTO = 1    # Go to the position
+        command.rSP  = 255  # Set the speed
+        command.rFR  = 150  # Set the force
+
+        self.gripper_pub.publish(command)
+
+        rospy.sleep(GRIPPER_SLEEP_INTERVAL)
+
+    def gripper_close(self):
+        """Close the gripper"""
+        
+        command = Robotiq2FGripper_robot_output();
+        command.rPR = 255   # Fully close the gripper
+
+        self.gripper_pub.publish(command)
+
+        # rospy.sleep(GRIPPER_SLEEP_INTERVAL)
+    
+    def gripper_open(self):
+        """Open the gripper"""
+
+        command = Robotiq2FGripper_robot_output();
+        command.rPR = 0   # Fully open the gripper
+
+        self.gripper_pub.publish(command)
+        # rospy.sleep(GRIPPER_SLEEP_INTERVAL)
+
 
 class MotionCommander:
-    """Small trajectory client to test a joint trajectory"""
+    """A trajectory client to run a joint trajectory"""
 
-    ###################### send the joint trajectory ######################
     def __init__(self, 
                  verbose: bool = True, 
                  timeout_wait_duration: int=5,
@@ -108,12 +202,12 @@ class MotionCommander:
         rospy.init_node("motion_commander")
         timeout = rospy.Duration(self.wait_duration)
 
-        # 
+        # initialize the services we need
         self.switch_srv = rospy.ServiceProxy("controller_manager/switch_controller", SwitchController)
         self.load_srv = rospy.ServiceProxy("controller_manager/load_controller", LoadController)
         self.list_srv = rospy.ServiceProxy("controller_manager/list_controllers", ListControllers)
         
-        # 
+        # waiting for the switch service
         try:
             self.switch_srv.wait_for_service(timeout.to_sec()) # wait for the service 
         except rospy.exceptions.ROSException as err:
@@ -124,10 +218,12 @@ class MotionCommander:
         self.joint_trajectory_controller = JOINT_TRAJECTORY_CONTROLLERS[joint_controller_index]
         self.cartesian_trajectory_controller = CARTESIAN_TRAJECTORY_CONTROLLERS[cartesian_controller_index]
 
+        # 
+        self.cartesian_state_listener = CartesianStateListener()
+        self.gripper_state_listener = GripperStateListener()
+        self.gripper_commander = GripperCommander() 
 
 
-
-    ###################### 🔥send the joint trajectory🔥 ######################
     def send_joint_trajectory(self, position_list=[], velocity_list=[], duration_list=[]):
         """Send a trajectory using the selected action server"""
 
@@ -143,7 +239,7 @@ class MotionCommander:
         # wait for action server to be ready
         timeout = rospy.Duration(self.wait_duration)
         if not trajectory_client.wait_for_server(timeout):
-            rospy.logerr("Could not reach controller action server.")
+            rospy.logerr("[ERROR] Could not reach controller action server.")
             sys.exit(-1)
 
         # create trajectory goal
@@ -166,7 +262,7 @@ class MotionCommander:
         # ask the user to confitm the following actions
         if self.is_verbose:
             self.ask_confirmation(position_list)
-            rospy.loginfo("Executing trajectory using the {}".format(self.joint_trajectory_controller))
+            rospy.loginfo("[INFO] Executing trajectory using the {}".format(self.joint_trajectory_controller))
 
         # send the goals and wait for answer
         trajectory_client.send_goal(goal)
@@ -174,9 +270,8 @@ class MotionCommander:
 
         # get the results from server
         result = trajectory_client.get_result()
-        rospy.loginfo("Trajectory execution finished in state {}".format(result.error_code))
-    
-    ###################### 🔥send the cartesian trajectory🔥 ######################
+        rospy.loginfo("[INFO] Trajectory execution finished in state {}".format(result.error_code))
+
     def send_cartesian_trajectory(self, pose_list=[], duration_list=[]):
         """Send a Cartesian trajectory it using the selected action server"""
 
@@ -195,7 +290,7 @@ class MotionCommander:
         # wait for action server to be ready
         timeout = rospy.Duration(self.wait_duration)
         if not trajectory_client.wait_for_server(timeout):
-            rospy.logerr("Could not reach controller action server.")
+            rospy.logerr("[ERROR] Could not reach controller action server.")
             sys.exit(-1)
         
         # check the size of each list in the trajectory
@@ -211,7 +306,7 @@ class MotionCommander:
         # ask the user to confitm the following actions
         if self.is_verbose:
             self.ask_confirmation(pose_list)
-            rospy.loginfo("Executing trajectory using the {}".format(self.cartesian_trajectory_controller))
+            rospy.loginfo("[INFO] Executing trajectory using the {}".format(self.cartesian_trajectory_controller))
 
         # send the goals and wait for answer
         trajectory_client.send_goal(goal)
@@ -219,8 +314,72 @@ class MotionCommander:
 
         # get the results from server
         result = trajectory_client.get_result()
-        rospy.loginfo("Trajectory execution finished in state {}".format(result.error_code))
+        rospy.loginfo("[INFO] Trajectory execution finished in state {}".format(result.error_code))
 
+    def execute_arm_gripper_trajectory(self, pose_list=[], grip_list=[], duration_list=[]):
+        """Execute the whole trajectory combining robot arm and gripper"""
+        """
+            param@pose_list : cartesian position
+            param@grip_list : 0/1 only
+            param@duration_list : the interval between each movement
+        """
+
+        # check the size of each list in the trajectory
+        assert len(pose_list)==len(grip_list)==len(duration_list), "[ERROR] receive different sizes of each list in pose trajectory"
+
+        # switch to the controller that we chose
+        self.switch_controller(self.cartesian_trajectory_controller)
+
+        # initialize the trajectory client
+        trajectory_client = actionlib.SimpleActionClient(
+            "{}/follow_cartesian_trajectory".format(self.cartesian_trajectory_controller), # the name of the server in ROS network
+            FollowCartesianTrajectoryAction, # the type of the message
+        )
+
+        # wait for action server to be ready
+        timeout = rospy.Duration(self.wait_duration)
+        if not trajectory_client.wait_for_server(timeout):
+            rospy.logerr("[ERROR] Could not reach controller action server.")
+            sys.exit(-1)
+
+        # ask the user to confitm the following actions
+        if self.is_verbose:
+            self.ask_confirmation(pose_list)
+            rospy.loginfo("[INFO] Executing trajectory using the {}".format(self.cartesian_trajectory_controller))
+
+        # run the trajectory for each time
+        for mv_idx,pose in enumerate(pose_list):
+            
+            # initial only one goal
+            goal = FollowCartesianTrajectoryGoal()
+            point = CartesianTrajectoryPoint()
+            point.pose = pose
+            point.time_from_start = rospy.Duration(duration_list[mv_idx])
+            goal.trajectory.points.append(point)
+
+            # send the goals and wait for answer
+            trajectory_client.send_goal(goal)
+            trajectory_client.wait_for_result()
+
+            # get the results from server
+            if self.is_verbose:
+                result = trajectory_client.get_result()
+                rospy.loginfo("[INFO] Trajectory execution finished in state {}".format(result.error_code))
+            
+            # command the gripper to move
+            if grip_list[mv_idx]==GRIPPER_OPEN :
+                self.gripper_commander.gripper_open()
+            elif grip_list[mv_idx]==GRIPPER_CLSOE :
+                self.gripper_commander.gripper_close()
+            else:
+                raise ValueError("[ERROR] the value of grip_list is neither 1 nor 0")
+            
+            # finish only until the gripper is done
+            while self.gripper_state_listener.get_is_gripper_stopped() == False:
+                rospy.sleep(GRIPPER_SLEEP_INTERVAL)
+        
+        rospy.loginfo("[INFO] Trajectory execution finished successfully")
+    
     def ask_confirmation(self, waypoint_list):
         """Ask the user for confirmation. This function is obviously not necessary, but makes sense
         in a testing script when you know nothing about the user's setup."""
@@ -231,10 +390,10 @@ class MotionCommander:
         while not valid:
             input_str = input(
                 "Please confirm that the robot path is clear of obstacles.\n"
-                "Keep the EM-Stop available at all times. You are executing\n"
-                "the motion at your own risk. Please type 'y' to proceed or 'n' to abort: "
+                "Keep the EM-Stop available at all times.\n"
+                "Please type 'y' to proceed or 'n' to abort: "
             )
-
+            
             valid = input_str in ["y", "n"]
 
             if not valid:
@@ -243,9 +402,9 @@ class MotionCommander:
                 confirmed = input_str == "y"
         
         if not confirmed:
-            rospy.loginfo("Exiting as requested by user.")
+            rospy.loginfo("[INFO] Exiting as requested by user.")
             sys.exit(0)
-        
+
     def switch_controller(self, target_controller):
         """Activates the desired controller and stops all others from the predefined list above"""
     
@@ -276,7 +435,10 @@ class MotionCommander:
         srv.strictness = SwitchControllerRequest.BEST_EFFORT
         self.switch_srv(srv)
 
+    def get_arm_cartesian_state(self):
+        """Get the position and orientation of the arm's end-effector"""
 
+        return self.cartesian_state_listener.get_actual_cartesian()
 
 
 if __name__ == "__main__":
@@ -321,5 +483,4 @@ if __name__ == "__main__":
     #         trajectory_type
     #     )
     # )
-
 

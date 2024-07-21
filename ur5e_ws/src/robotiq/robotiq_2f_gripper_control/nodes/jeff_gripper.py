@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 from __future__ import print_function
 
 import rospy
@@ -162,7 +161,7 @@ def publisher():
     pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output)
     
     command = outputMsg.Robotiq2FGripper_robot_output();
-
+    
     while not rospy.is_shutdown():
 
         command = genCommand(askForCommand(command), command)
