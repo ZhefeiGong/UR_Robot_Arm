@@ -18,20 +18,26 @@ class CartesianStateListener():
         self.is_verbose = verbose
         self.cartesian_pose = geometry_msgs.Pose()
 
-        rospy.init_node('tf_listener')
+        # rospy.init_node('tf_listener')
         rospy.Subscriber("tf", TFMessage, self.tf_callback)
         
     def tf_callback(self, msg):
         """Initialize the callback function of the subscriber"""
 
-        assert len(msg.transforms) == 1, "[ERROR] the size of each tf msg is not equal to one"
-        for transform in msg.transforms : 
+        num_tf_end_effector = 1
+        
+        if len(msg.transforms) == num_tf_end_effector:
+
+            # get the info
+            transform = msg.transforms[0]
+            
             # print the info
             if self.is_verbose:
-                print("[MSG] Frame ID : ", transform.header.frame_id)
-                print("[MSG] Child Frame ID : ", transform.header.frame_id)
-                print("[MSG] Translation : ", transform.transform.translation)
-                print("[MSG] Rotation : ", transform.transform.rotation)
+                print("[MSG] Frame ID : ", transform.header.frame_id) # the name of the coordinate we use
+                print("[MSG] Child Frame ID : ", transform.child_frame_id) # the name of the child coordinate (end-effector | gripper)
+                print("[MSG] Translation : \n", transform.transform.translation)
+                print("[MSG] Rotation : \n", transform.transform.rotation)
+            
             # save the cartesian info
             self.cartesian_pose.position = transform.transform.translation          # x,y,z | geometry_msgs.Vector3
             self.cartesian_pose.orientation = transform.transform.rotation          # x,y,z,w | geometry_msgs.Quaternion
@@ -44,5 +50,17 @@ class CartesianStateListener():
         else:
             raise ValueError("[ERROR] haven't assign any value to cartesian_pose")
 
-if __name__ == "__main__":
+
+
+def main():
+    """Main Function"""
+
     print("===== CartesianStateListener =====")
+
+    rospy.init_node('tf_listener')
+    listener = CartesianStateListener(verbose=True)
+    rospy.spin()
+
+
+if __name__ == "__main__":
+    main()

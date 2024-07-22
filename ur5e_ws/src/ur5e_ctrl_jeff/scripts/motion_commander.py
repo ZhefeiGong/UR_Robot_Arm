@@ -23,9 +23,10 @@ from cartesian_control_msgs.msg import (
 )
 
 # 
-from ur5e_ctrl_jeff.msg import Robotiq2FGripper_robot_input  
+from ur5e_ctrl_jeff.msg import Robotiq2FGripper_robot_output
 from cartesian_listener import CartesianStateListener
-from gripper_listener import GripperStateListener
+from gripper_listener import GripperStateListener  
+
 
 # Compatibility for python2 and python3
 if sys.version_info[0] < 3:
@@ -145,44 +146,43 @@ class GripperCommander:
 
     def __init__(self):
         
-        # 
-        rospy.init_node('Robotiq2FGripperSimpleController')
-        self.gripper_pub = rospy.Publisher('Robotiq2FGripperRobotOutput', Robotiq2FGripper_robot_input)
+        # Initialization
+        # rospy.init_node('Robotiq2FGripperSimpleController')
+        self.gripper_pub = rospy.Publisher('Robotiq2FGripperRobotOutput', Robotiq2FGripper_robot_output)
+        self.command = Robotiq2FGripper_robot_output();
 
-        #
+        # Activate the gripper first
         self.gripper_activate()
 
     def gripper_activate(self):
         """Activate the gripper before utilizing"""
 
-        command = Robotiq2FGripper_robot_output();
-        command.rACT = 1    # Activate the gripper
-        command.rGTO = 1    # Go to the position
-        command.rSP  = 255  # Set the speed
-        command.rFR  = 150  # Set the force
-
-        self.gripper_pub.publish(command)
-
         rospy.sleep(GRIPPER_SLEEP_INTERVAL)
+
+        self.command.rACT = 1    # Activate the gripper
+        self.command.rGTO = 1    # Go to the position
+        self.command.rSP  = 255  # Set the speed
+        self.command.rFR  = 150  # Set the force
+
+        activate_interval = GRIPPER_SLEEP_INTERVAL*10
+        self.gripper_pub.publish(self.command)
+        rospy.sleep(activate_interval)
 
     def gripper_close(self):
         """Close the gripper"""
         
-        command = Robotiq2FGripper_robot_output();
-        command.rPR = 255   # Fully close the gripper
+        self.command.rPR = 255   # Fully close the gripper
 
-        self.gripper_pub.publish(command)
-
-        # rospy.sleep(GRIPPER_SLEEP_INTERVAL)
+        self.gripper_pub.publish(self.command)
+        rospy.sleep(GRIPPER_SLEEP_INTERVAL)
     
     def gripper_open(self):
         """Open the gripper"""
 
-        command = Robotiq2FGripper_robot_output();
-        command.rPR = 0   # Fully open the gripper
+        self.command.rPR = 0   # Fully open the gripper
 
-        self.gripper_pub.publish(command)
-        # rospy.sleep(GRIPPER_SLEEP_INTERVAL)
+        self.gripper_pub.publish(self.command)
+        rospy.sleep(GRIPPER_SLEEP_INTERVAL)
 
 
 class MotionCommander:
@@ -220,9 +220,8 @@ class MotionCommander:
 
         # 
         self.cartesian_state_listener = CartesianStateListener()
-        self.gripper_state_listener = GripperStateListener()
+        self.gripper_state_listener = GripperStateListener(interval=GRIPPER_SLEEP_INTERVAL, timeout_wait_duration=self.wait_duration )
         self.gripper_commander = GripperCommander() 
-
 
     def send_joint_trajectory(self, position_list=[], velocity_list=[], duration_list=[]):
         """Send a trajectory using the selected action server"""
@@ -308,6 +307,8 @@ class MotionCommander:
             self.ask_confirmation(pose_list)
             rospy.loginfo("[INFO] Executing trajectory using the {}".format(self.cartesian_trajectory_controller))
 
+        print("=========== HERE ===========")
+
         # send the goals and wait for answer
         trajectory_client.send_goal(goal)
         trajectory_client.wait_for_result()
@@ -368,15 +369,16 @@ class MotionCommander:
             
             # command the gripper to move
             if grip_list[mv_idx]==GRIPPER_OPEN :
+                print("OPEN")
                 self.gripper_commander.gripper_open()
             elif grip_list[mv_idx]==GRIPPER_CLSOE :
+                print("CLOSE")
                 self.gripper_commander.gripper_close()
             else:
                 raise ValueError("[ERROR] the value of grip_list is neither 1 nor 0")
             
             # finish only until the gripper is done
-            while self.gripper_state_listener.get_is_gripper_stopped() == False:
-                rospy.sleep(GRIPPER_SLEEP_INTERVAL)
+            self.gripper_state_listener.wait_for_gripper()
         
         rospy.loginfo("[INFO] Trajectory execution finished successfully")
     
@@ -440,10 +442,20 @@ class MotionCommander:
 
         return self.cartesian_state_listener.get_actual_cartesian()
 
+    def get_gripper_state(self):
+        """Get whether the gripper is closed or not"""
+
+        if self.gripper_state_listener.get_is_closed():
+            return GRIPPER_CLSOE
+        else:
+            return GRIPPER_OPEN
+
 
 if __name__ == "__main__":
 
     client = MotionCommander()
+
+    print("===== MotionCommander =====")
     
     # # JOINT TRAJECTORY CONTROLLER
     # # the following list are arbitrary positions | Change to your own needs if desired
@@ -453,7 +465,7 @@ if __name__ == "__main__":
     # velocity_list = [[0.2, 0, 0, 0, 0, 0]]
     # velocity_list.append([-0.2, 0, 0, 0, 0, 0])
     # velocity_list.append([0, 0, 0, 0, 0, 0])
-    # duration_list = [3.0, 7.0, 10.0]
+    # duration_list = [5.0, 10.0, 15.0]
     # client.send_joint_trajectory(position_list, velocity_list, duration_list)
     
     # # POSE TRAJECTORY CONTROLLER
@@ -475,12 +487,44 @@ if __name__ == "__main__":
     #         geometry_msgs.Vector3(0.4, -0.1, 0.4), geometry_msgs.Quaternion(0, 0, 0, 1)
     #     ),
     # ]
-    # duration_list = [3.0, 4.0, 5.0, 6.0, 7.0]
+    # duration_list = [5.0, 10.0, 15.0, 20.0, 25.0]
     # client.send_cartesian_trajectory(pose_list, duration_list)
+    # print(client.get_arm_cartesian_state())
+
+
+    # # POSITION + GRIPPER
+    # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
+    # pose_list = [
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(0.2, 0.2, 0.45), geometry_msgs.Quaternion(0, 0, 0, 1)
+    #     ),
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(0.3, 0.6, 0.65), geometry_msgs.Quaternion(0, 0, 0, 1)
+    #     ),
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(0.5, 0.7, 0.85), geometry_msgs.Quaternion(0, 0, 0, 1)
+    #     ),
+    # ]
+    # duration_list = [8.0, 16.0, 24.0]
+    # grip_list = [0, 1, 0]
+    # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+    # print(client.get_arm_cartesian_state())
+
+
+    # POSITION + GRIPPER
+    # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
+    pose_list = [
+        geometry_msgs.Pose(
+            geometry_msgs.Vector3(0.3, -0.1, 0.65), geometry_msgs.Quaternion(0, 0, 0, 1)
+        ),
+    ]
+    duration_list = [8.0]
+    grip_list = [1]
+    client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+    print(client.get_arm_cartesian_state())
 
     # raise ValueError(
     #     "I only understand types 'joint_based' and 'cartesian', but got '{}'".format(
     #         trajectory_type
     #     )
     # )
-

@@ -71,7 +71,7 @@ install(
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(PROGRAMS nodes/Robotiq2FGripperRtuNode.py nodes/Robotiq2FGripperSimpleController.py nodes/Robotiq2FGripperStatusListener.py nodes/Robotiq2FGripperTcpNode.py nodes/jeff_gripper.py 
+install(PROGRAMS nodes/Robotiq2FGripperRtuNode.py nodes/jeff_gripper.py nodes/Robotiq2FGripperSimpleController.py nodes/Robotiq2FGripperStatusListener.py nodes/Robotiq2FGripperTcpNode.py 
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(PROGRAMS src/${PROJECT_NAME}/robotiq_2f_gripper_ctrl.py

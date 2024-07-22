@@ -166,6 +166,8 @@ def publisher():
 
         command = genCommand(askForCommand(command), command)
 
+        print(command)
+
         pub.publish(command)
 
         rospy.sleep(0.1)
@@ -301,4 +303,5 @@ def statusInterpreter(status):
 if __name__ == '__main__':
 
     publisher()
-    Robotiq2FGripperStatusListener()
+    
+    # Robotiq2FGripperStatusListener()

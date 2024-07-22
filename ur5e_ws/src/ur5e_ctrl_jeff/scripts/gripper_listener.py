@@ -54,16 +54,21 @@ class GripperStateListener():
     """Subscribe the status of the gripper"""
 
     def __init__(self,
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 interval: float = 0.1,
+                 timeout_wait_duration: int = 5):
 
-        self.GIRPPER_STOP_SIGN = 0
+        self.GIRPPER_STOP_SIGN_CLP = 0x02
+        self.GIRPPER_STOP_SIGN_NOR = 0x03
         self.is_verbose = verbose
         self.gripper_state = None
         self.is_gripper_stopped = True
+        self.mim_interval = interval
+        self.wait_duration = timeout_wait_duration
         
-        rospy.init_node('Robotiq2FGripperStatusListener')
+        # rospy.init_node('Robotiq2FGripperStatusListener')
         rospy.Subscriber("Robotiq2FGripperRobotInput", Robotiq2FGripper_robot_input, self.gripper_callback)
-
+    
     def gripper_callback(self, msg):
         """Define the callback function of gripper subscriber"""
 
@@ -71,7 +76,7 @@ class GripperStateListener():
             print(self.status_interpreter(msg))
         
         self.gripper_state = msg
-        self.is_gripper_stopped = (msg.gGTO == self.GIRPPER_STOP_SIGN)
+        self.is_gripper_stopped = (msg.gOBJ == self.GIRPPER_STOP_SIGN_NOR or msg.gOBJ == self.GIRPPER_STOP_SIGN_CLP)
 
     def get_gripper_state(self):
         """Get gripper state info"""
@@ -85,6 +90,38 @@ class GripperStateListener():
         """Get the info to judge whether the gripper is stopped"""
 
         return self.is_gripper_stopped
+
+    def get_is_closed(self):
+        """Get the info to judge whether the gripper is closed"""
+
+        if self.gripper_state.gPR == 0xFF :
+            return True
+        else:
+            return False
+    
+    def wait_for_gripper(self):
+        """Wait for the gripper's execution"""
+
+        # initialize the params
+        start_time = rospy.Time.now()
+        timeout = rospy.Duration(self.wait_duration)
+
+        print("BEGIN 2 WAIT")
+
+        # begin to wait
+        while not rospy.is_shutdown():
+            
+            # check whether the gripper is done
+            if self.is_gripper_stopped:
+                print("DONE")
+                return
+
+            # check whether executiing time is out
+            if (rospy.Time.now()-start_time).to_sec() > timeout.to_sec():
+                raise ValueError("[ERROR] gripper executing time is too long")
+
+            # sleep a little bit time
+            rospy.sleep(self.mim_interval)
     
     def status_interpreter(self, status):
         """Generate a string according to the current value of the status variables."""
@@ -149,5 +186,15 @@ class GripperStateListener():
         output += 'Current of Fingers: ' + str(status.gCU * 10) + ' mA\n'
         return output
 
-if __name__ == "__main__":
+def main():
+    """Main Function"""
+
     print("===== GripperStateListener =====")
+
+    rospy.init_node('Robotiq2FGripperStatusListener')
+    listener = GripperStateListener(verbose=True)
+    rospy.spin()
+
+if __name__ == "__main__":
+    main()
+    

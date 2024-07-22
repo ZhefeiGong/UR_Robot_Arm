@@ -66,4 +66,11 @@ rosrun ur_robot_driver jeff_move
 rosrun ur_robot_driver jeff_listen
 
 rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
+rosrun robotiq_2f_gripper_control jeff_gripper.py
 rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
+
+rosrun ur5e_ctrl_jeff cartesian_listener.py
+rosrun ur5e_ctrl_jeff gripper_listener.py
+
+rosrun ur5e_ctrl_jeff motion_commander.py
+
