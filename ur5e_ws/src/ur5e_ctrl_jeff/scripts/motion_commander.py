@@ -317,12 +317,58 @@ class MotionCommander:
         result = trajectory_client.get_result()
         rospy.loginfo("[INFO] Trajectory execution finished in state {}".format(result.error_code))
 
-    def execute_arm_gripper_trajectory(self, pose_list=[], grip_list=[], duration_list=[]):
-        """Execute the whole trajectory combining robot arm and gripper"""
+    def search_gripper_mutation(self, gripper_list=[]):
         """
-            param@pose_list : cartesian position
-            param@grip_list : 0/1 only
-            param@duration_list : the interval between each movement
+        find the mutational state of gripper
+        
+        param@gripper_list : list[GRIPPER_OPEN or GRIPPER_CLOSE]
+        
+        """
+
+        assert all(x in [GRIPPER_OPEN, GRIPPER_CLSOE] for x in gripper_list), "[ERROR] the gripper list contains elements other than open and close. "
+
+        cur_gripper_state = self.get_gripper_state()
+        girpper_mutation_indexes = []
+        girpper_mutation_actions = []
+
+        for index, state in enumerate(gripper_list):
+            if state != cur_gripper_state:
+                girpper_mutation_actions.append(state)
+                girpper_mutation_indexes.append(index)
+                cur_gripper_state = state
+
+        return girpper_mutation_indexes, girpper_mutation_actions
+    
+    def split_list(self, lst, indices):
+        """
+        split the pose and duration list according to the indices
+
+        param@lst : 
+        param@indices
+        """
+
+        result = [] # Initialize the result list
+        start = 0 # Start index of the first slice
+
+        # Loop through each index in indices
+        for index in indices:
+            result.append(lst[start:index+1])   # Create a slice from start to index (inclusive)
+            start = index + 1 # Update the start index for the next slice
+
+        # Add the remaining elements after the last index
+        if start < len(lst):
+            result.append(lst[start:])
+
+        return result
+
+    def execute_arm_gripper_trajectory(self, pose_list=[], grip_list=[], duration_list=[]):
+        """
+        Execute the whole trajectory combining robot arm and gripper
+        
+        param@pose_list : cartesian position
+        param@grip_list : 0/1 only
+        param@duration_list : the interval between each movement
+
         """
 
         # check the size of each list in the trajectory
@@ -347,16 +393,26 @@ class MotionCommander:
         if self.is_verbose:
             self.ask_confirmation(pose_list)
             rospy.loginfo("[INFO] Executing trajectory using the {}".format(self.cartesian_trajectory_controller))
+        
+        # split the poses according to the mutation of gripper action
+        mutation_indexes, mutation_actions = self.search_gripper_mutation(grip_list)
+        pose_list_split = self.split_list(pose_list, mutation_indexes)
+        duration_list_split = self.split_list(duration_list, mutation_indexes)
 
         # run the trajectory for each time
-        for mv_idx,pose in enumerate(pose_list):
+        for mut_idx,(poses, durations) in enumerate(zip(pose_list_split, duration_list_split)):
+
+            # visulize the movement of the arm
+            if self.is_verbose : 
+                rospy.logwarn("[INFO] The robot will move to the following waypoints: {}".format(poses))
             
-            # initial only one goal
+            # initial goals
             goal = FollowCartesianTrajectoryGoal()
-            point = CartesianTrajectoryPoint()
-            point.pose = pose
-            point.time_from_start = rospy.Duration(duration_list[mv_idx])
-            goal.trajectory.points.append(point)
+            for mv_idx, (pose, duration) in enumerate(zip(poses, durations)):
+                point = CartesianTrajectoryPoint()
+                point.pose = pose
+                point.time_from_start = rospy.Duration(duration)
+                goal.trajectory.points.append(point)
 
             # send the goals and wait for answer
             trajectory_client.send_goal(goal)
@@ -367,18 +423,27 @@ class MotionCommander:
                 result = trajectory_client.get_result()
                 rospy.loginfo("[INFO] Trajectory execution finished in state {}".format(result.error_code))
             
-            # command the gripper to move
-            if grip_list[mv_idx]==GRIPPER_OPEN :
-                print("OPEN")
-                self.gripper_commander.gripper_open()
-            elif grip_list[mv_idx]==GRIPPER_CLSOE :
-                print("CLOSE")
-                self.gripper_commander.gripper_close()
-            else:
-                raise ValueError("[ERROR] the value of grip_list is neither 1 nor 0")
-            
-            # finish only until the gripper is done
-            self.gripper_state_listener.wait_for_gripper()
+            ####### ####### ####### ####### ####### ####### ####### ####### ####### 
+
+            # change the state of gripper
+            if mut_idx <= len(mutation_actions) - 1:
+                
+                # show the movement of gripper
+                if self.is_verbose:
+                    rospy.loginfo("[INFO] The Gripper changed to {}".format(mutation_actions[mv_idx]))
+
+                # command the gripper to move
+                if mutation_actions[mv_idx]==GRIPPER_OPEN :
+                    print("OPEN")
+                    self.gripper_commander.gripper_open()
+                elif mutation_actions[mv_idx]==GRIPPER_CLSOE :
+                    print("CLOSE")
+                    self.gripper_commander.gripper_close()
+                else:
+                    raise ValueError("[ERROR] the value of grip_list is neither 1 nor 0")
+                
+                # finish only until the gripper is done
+                self.gripper_state_listener.wait_for_gripper()
         
         rospy.loginfo("[INFO] Trajectory execution finished successfully")
     
@@ -386,7 +451,7 @@ class MotionCommander:
         """Ask the user for confirmation. This function is obviously not necessary, but makes sense
         in a testing script when you know nothing about the user's setup."""
 
-        rospy.logwarn("The robot will move to the following waypoints: \n{}".format(waypoint_list))
+        rospy.logwarn("[INFO] The robot will move to the following waypoints: \n{}".format(waypoint_list))
         confirmed = False
         valid = False
         while not valid:
@@ -399,7 +464,7 @@ class MotionCommander:
             valid = input_str in ["y", "n"]
 
             if not valid:
-                rospy.loginfo("Please confirm by entering 'y' or abort by entering 'n'")
+                rospy.loginfo("[INPUT] Please confirm by entering 'y' or abort by entering 'n'")
             else:
                 confirmed = input_str == "y"
         
@@ -454,7 +519,6 @@ class MotionCommander:
 if __name__ == "__main__":
 
     client = MotionCommander()
-
     print("===== MotionCommander =====")
     
     # # JOINT TRAJECTORY CONTROLLER
@@ -491,7 +555,6 @@ if __name__ == "__main__":
     # client.send_cartesian_trajectory(pose_list, duration_list)
     # print(client.get_arm_cartesian_state())
 
-
     # # POSITION + GRIPPER
     # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
     # pose_list = [
@@ -510,7 +573,6 @@ if __name__ == "__main__":
     # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
     # print(client.get_arm_cartesian_state())
 
-
     # POSITION + GRIPPER
     # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
     pose_list = [
@@ -528,3 +590,4 @@ if __name__ == "__main__":
     #         trajectory_type
     #     )
     # )
+
