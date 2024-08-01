@@ -38,7 +38,6 @@ roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_
 rosrun ur_robot_driver tool_communication
 
 ###### Gripper ######
-
 sudo usermod -a -G dialout $USER
 dmesg | grep tty
 
@@ -52,10 +51,12 @@ roslaunch robotiq_2f_85_gripper_visualization view_robotiq_2f_85.launch
 
 
 ###### WORK FLOW ######
+cd UR_Robot_Arm/ur5e_ws/
 source /opt/ros/noetic/setup.bash
 source devel/setup.bash
 
 roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
+# roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.0.183 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
 roslaunch ur_robot_driver example_rviz.launch
 
 sudo usermod -a -G dialout $USER

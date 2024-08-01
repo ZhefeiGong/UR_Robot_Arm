@@ -573,16 +573,17 @@ if __name__ == "__main__":
     # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
     # print(client.get_arm_cartesian_state())
     
-    # POSITION + GRIPPER
-    # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
-    pose_list = [
-        geometry_msgs.Pose(
-            geometry_msgs.Vector3(0.3, -0.1, 0.65), geometry_msgs.Quaternion(0, 0, 0, 1)
-        ),
-    ]
-    duration_list = [8.0]
-    grip_list = [1]
-    client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+    # # POSITION + GRIPPER
+    # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
+    # pose_list = [
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(0.3, -0.1, 0.65), geometry_msgs.Quaternion(0, 0, 0, 1)
+    #     ),
+    # ]
+    # duration_list = [8.0]
+    # grip_list = [1]
+    # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+
     print(client.get_arm_cartesian_state())
 
     # raise ValueError(

@@ -134,9 +134,7 @@ class VLAClient:
 
         self.sock.close()
 
-
-
-def getCompleteTraj(traj):
+def get_completeTraj(traj):
     """
     
     """
@@ -156,8 +154,7 @@ def getCompleteTraj(traj):
     # from first left [ to first right ]
     return traj[first_open_index:last_close_index + 1]
 
-
-def getTrajNdArray(traj: str) -> np.ndarray:
+def get_trajNdArray(traj: str) -> np.ndarray:
     """
     
     """
@@ -186,8 +183,8 @@ if __name__ == "__main__":
         "model_path" : "/liujinxin/code/Reflect/test_checkpoints/13b/dino/finetune_13_12_no_1_5_base_dino_large_7500_c_1_6000/checkpoint-8000"
     }
 
-    initialImg = load_image("/liujinxin/dataset/reflection/berkeley_ur/data_cloth/validation/folder_merge/image_class1_val_re_c1_7_23_14_21/initial2314237000000.png") # 
-    finalImg = load_image("/liujinxin/dataset/reflection/berkeley_ur/data_cloth/validation/folder_merge/image_class1_val_re_c1_7_23_14_21/initial2314237000000.png") # 
+    initialImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
+    finalImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
 
     infer_param = {
         "initialImg" : initialImg,
@@ -203,13 +200,13 @@ if __name__ == "__main__":
     
     # Template : """{instruction}"" following ""{initialImg}"", describe the next ""{step}"" actions.","{actions}"
     
-    client = VLAClient(host="172.22.177.203", port=30033)
+    client = VLAClient(host="172.22.177.215", port=30033)
     
     # result2laod = client.load_model(load_param)
     # print(result2laod)
     
     result2infer = client.infer_traj(infer_param)
-    print(getCompleteTraj(result2infer['traj']))
-    print(getTrajNdArray(getCompleteTraj(result2infer['traj'])))
+    print(get_completeTraj(result2infer['traj']))
+    print(get_trajNdArray(get_completeTraj(result2infer['traj'])))
     
     
