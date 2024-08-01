@@ -572,7 +572,7 @@ if __name__ == "__main__":
     # grip_list = [0, 1, 0]
     # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
     # print(client.get_arm_cartesian_state())
-
+    
     # POSITION + GRIPPER
     # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
     pose_list = [

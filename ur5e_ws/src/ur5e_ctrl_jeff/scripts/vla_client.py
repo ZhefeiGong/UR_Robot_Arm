@@ -45,7 +45,7 @@ class RequestClient:
         url = f"http://{self.host}:{self.port}/inference"
         response = requests.post(url, data=data, timeout=1000*60)
         return response.text
-
+    
     def load_model(self, model_path):
         """ load the model """
         url = f"http://{self.host}:{self.port}/load"
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     for i in range(5):
         
         initialImg = load_image("/liujinxin/code/calvin/dataset/task_D_D/images/0.jpg")
-
+        
         data = {
             "initialImg": initialImg,
             "initialRobotState": [0.0018, -0.0498, 0.5481, 3.0264, -0.0792, 1.4298, 1],
@@ -159,7 +159,7 @@ if __name__ == "__main__":
             print("Received traj: ", traj)
         else:
             break
-
+    
         sleep(5)
     
     client.close()
