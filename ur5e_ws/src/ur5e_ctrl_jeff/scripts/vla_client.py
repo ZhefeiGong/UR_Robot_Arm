@@ -12,7 +12,8 @@ import traceback
 
 def load_image(image_file):
     """
-    
+    change the image to a list aiming for transmission
+
     """
 
     if image_file.startswith("http://") or image_file.startswith("https://"):
@@ -21,10 +22,10 @@ def load_image(image_file):
     else:
         image = Image.open(image_file).convert("RGB")
 
-    # Convert the image to a numpy array
+    # Convert the image to a numpy Array
     np_image = np.array(image)
 
-    # Convert the numpy array to a list
+    # Convert the numpy array to a List
     image_list = np_image.tolist()
 
     return image_list
@@ -72,7 +73,7 @@ class VLAClient:
         self.client = RequestClient(host, port)
         print(f"[INFO] Connecting to {host}:{port}")
     
-    def inference_traj(self, data, max_retries=3, retry_delay=1):
+    def infer_traj(self, data, max_retries=3, retry_delay=1):
         """
         inference
         """
@@ -133,33 +134,82 @@ class VLAClient:
 
         self.sock.close()
 
+
+
+def getCompleteTraj(traj):
+    """
+    
+    """
+
+    # check
+    if traj == "" or traj == None:
+        return ""
+
+    # find the [ and ]
+    first_open_index = traj.find("[")
+    last_close_index = traj.rfind("]")
+
+    # can not find
+    if first_open_index == -1 or last_close_index == -1:
+        return ""
+
+    # from first left [ to first right ]
+    return traj[first_open_index:last_close_index + 1]
+
+
+def getTrajNdArray(traj: str) -> np.ndarray:
+    """
+    
+    """
+    
+    # remove the "
+    traj = traj.replace('"', "")
+    
+    # find the first left [
+    while traj[0] == "[":
+        # cut the first right ]
+        traj = traj[1:-1]
+    
+    # split the actions
+    split_strings = traj.split("][")
+
+    # split each substring, convert the first five to float and the last one to int
+    nested_array = np.array([[float(x) for i, x in enumerate(s.split(","))] for s in split_strings])
+    
+    return nested_array
+
 if __name__ == "__main__":
 
-    # 30487 -> LLM1(traj)
-    # 30466 -> LLM2(reward)
-    
-    client = VLAClient(port=30487)
+    load_param = {
+        "clip_direct_load" : False,
+        "dino_vision_tower" : "dinov2-large",
+        "model_path" : "/liujinxin/code/Reflect/test_checkpoints/13b/dino/finetune_13_12_no_1_5_base_dino_large_7500_c_1_6000/checkpoint-8000"
+    }
 
-    for i in range(5):
-        
-        initialImg = load_image("/liujinxin/code/calvin/dataset/task_D_D/images/0.jpg")
-        
-        data = {
-            "initialImg": initialImg,
-            "initialRobotState": [0.0018, -0.0498, 0.5481, 3.0264, -0.0792, 1.4298, 1],
-            "instruction": "move the door to the left side",
-            "experiences": None,
-            "reward": 100,
-        }
-        
-        response = client.send(data)
-        traj = response["traj"]
+    initialImg = load_image("/liujinxin/dataset/reflection/berkeley_ur/data_cloth/validation/folder_merge/image_class1_val_re_c1_7_23_14_21/initial2314237000000.png") # 
+    finalImg = load_image("/liujinxin/dataset/reflection/berkeley_ur/data_cloth/validation/folder_merge/image_class1_val_re_c1_7_23_14_21/initial2314237000000.png") # 
 
-        if traj is not None:
-            print("Received traj: ", traj)
-        else:
-            break
+    infer_param = {
+        "initialImg" : initialImg,
+        # "finalImg" : finalImg,
+        "instruction" : "move the door to the left side",
+        "template" : "12:37:15", # "0:0:*" for random dialogue
+        "reward" : 0,
+        "prompt_img" : False, 
+        "last_actions" : "",
+        "maximumLength" : 220,
+        "robot_state" : "[0.0259, -0.2313, 0.5713, 3.0905, -0.0291, 1.5001, 1]",
+    }
     
-        sleep(5)
+    # Template : """{instruction}"" following ""{initialImg}"", describe the next ""{step}"" actions.","{actions}"
     
-    client.close()
+    client = VLAClient(host="172.22.177.203", port=30033)
+    
+    # result2laod = client.load_model(load_param)
+    # print(result2laod)
+    
+    result2infer = client.infer_traj(infer_param)
+    print(getCompleteTraj(result2infer['traj']))
+    print(getTrajNdArray(getCompleteTraj(result2infer['traj'])))
+    
+    
