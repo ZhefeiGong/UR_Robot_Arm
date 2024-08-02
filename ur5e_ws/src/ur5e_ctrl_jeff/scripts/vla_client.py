@@ -15,7 +15,7 @@ def load_image(image_file):
     change the image to a list aiming for transmission
 
     """
-
+        
     if image_file.startswith("http://") or image_file.startswith("https://"):
         response = requests.get(image_file)
         image = Image.open(BytesIO(response.content)).convert("RGB")
@@ -183,13 +183,13 @@ if __name__ == "__main__":
         "model_path" : "/liujinxin/code/Reflect/test_checkpoints/13b/dino/finetune_13_12_no_1_5_base_dino_large_7500_c_1_6000/checkpoint-8000"
     }
 
-    initialImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
-    finalImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
+    initialImg = load_image("ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
+    finalImg = load_image("ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
 
     infer_param = {
         "initialImg" : initialImg,
         # "finalImg" : finalImg,
-        "instruction" : "move the door to the left side",
+        "instruction" : "go push the red block left",
         "template" : "12:37:15", # "0:0:*" for random dialogue
         "reward" : 0,
         "prompt_img" : False, 
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     
     # Template : """{instruction}"" following ""{initialImg}"", describe the next ""{step}"" actions.","{actions}"
     
-    client = VLAClient(host="172.22.177.215", port=30033)
+    client = VLAClient(host="172.16.78.10", port=36095)
     
     # result2laod = client.load_model(load_param)
     # print(result2laod)

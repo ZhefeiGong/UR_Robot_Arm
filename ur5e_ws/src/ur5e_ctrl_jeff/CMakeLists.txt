@@ -164,6 +164,9 @@ catkin_install_python(PROGRAMS
   scripts/cartesian_listener.py
   scripts/gripper_listener.py
   scripts/motion_commander.py
+  scripts/vla_client.py
+  scripts/wrist_camera.py
+  scripts/inference.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
