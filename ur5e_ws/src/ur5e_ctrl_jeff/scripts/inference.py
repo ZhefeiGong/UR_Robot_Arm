@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import logging
 import sys
 import numpy as np
 import motion_commander
@@ -10,11 +9,16 @@ from vla_client import load_image, get_completeTraj, get_trajNdArray
 from scipy.spatial.transform import Rotation as R
 import geometry_msgs.msg as geometry_msgs
 
+from realsense_camera import RealsenseCamera
+from wrist_camera import WristCamera
+
+from utils import capture_image
+
 
 def euler_to_quaternion(action_arrary):
     """
     change the rotation from rx,ry,rz to x,y,z,w
-
+    
     """
     cartesian = action_arrary[:, 0:3]
     euler = action_arrary[:, 3:6]
@@ -59,32 +63,6 @@ def action_to_command(action_arrary_quaternion, first_duration=10):
 
     return pose_list, grip_list, duration_list
 
-def ask_confirmation(prompt=""):
-    """
-    ask the user to confirm the movement of the next step
-    """
-
-    confirmed = False
-    valid = False
-    while not valid:
-        
-        input_str = input(
-            prompt + 
-            "\n Please type 'y' to proceed or 'n' to abort: "
-        )
-
-        valid = input_str in ["y", "n"]
-
-        if not valid:
-            logging.info(
-                "[INPUT] Please confirm by entering 'y' or abort by entering 'n'"
-            )
-        else:
-            confirmed = input_str == "y"
-        
-        if not confirmed:
-            logging.info("[INFO] Exiting as requested by user.")
-            sys.exit(0)
 
 def run():
     """
@@ -95,7 +73,11 @@ def run():
     # initialization
     motion_client = MotionCommander()
     vla_client = VLAClient(host="172.16.78.10", port=36095)
-    
+
+    camera_wrist = WristCamera()
+    camera_scene = RealsenseCamera()
+
+
     # get the images
     ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
 
@@ -137,7 +119,7 @@ def run():
         [-0.10484, -0.11471, 0.57986, -0.00207, -0.01322, 1.60787, 1],]
     )
     """
-
+    
     action_arrary_quaternion = euler_to_quaternion(action_arrary)
     print(action_arrary_quaternion)
     pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion)

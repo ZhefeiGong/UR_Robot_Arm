@@ -4,6 +4,7 @@
 import sys
 import rospy
 import actionlib
+import numpy as np
 
 # Joint-Based Controller
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
@@ -573,19 +574,34 @@ if __name__ == "__main__":
     # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
     # print(client.get_arm_cartesian_state())
     
-    # POSITION + GRIPPER
-    # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
-    pose_list = [
-        geometry_msgs.Pose(
-            geometry_msgs.Vector3(0.3, -0.1, 0.65), geometry_msgs.Quaternion(0, 0, 0, 1)
-        ),
-    ]
-    duration_list = [8.0]
-    grip_list = [1]
-    client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+    # # POSITION + GRIPPER
+    # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
+    # pose_list = [
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(0.3, -0.1, 0.65), geometry_msgs.Quaternion(0, 0, 0, 1)
+    #     ),
+    # ]
+    # duration_list = [8.0]
+    # grip_list = [1]
+    # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
 
-    print(client.get_arm_cartesian_state())
+    client.gripper_commander.gripper_close()
+    client.gripper_state_listener.wait_for_gripper()
 
+    pose = client.get_arm_cartesian_state()
+    gripper = client.get_gripper_state()
+    state = np.array([[pose.position.x,
+                        pose.position.y,
+                        pose.position.z,
+                        pose.orientation.x,
+                        pose.orientation.y,
+                        pose.orientation.z,
+                        pose.orientation.w,
+                        gripper
+                        ]], float)
+    print(pose)
+    print(state)
+    
     # raise ValueError(
     #     "I only understand types 'joint_based' and 'cartesian', but got '{}'".format(
     #         trajectory_type

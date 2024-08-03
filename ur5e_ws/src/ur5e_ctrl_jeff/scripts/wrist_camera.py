@@ -3,9 +3,11 @@
 import cv2
 import threading
 
+from utils import capture_image
+
 class WristCamera:
     """
-    the class for wrist camera
+    the class for wrist camera | open another thread for picture capturing
 
     """
 
@@ -19,7 +21,7 @@ class WristCamera:
         if not self.running:
             self.running = True
             threading.Thread(target=self.update_frame, daemon=True).start()
-
+    
     def update_frame(self):
         while self.running:
             ret, frame = self.cap.read()
@@ -35,35 +37,37 @@ class WristCamera:
         self.running = False
         self.cap.release()
 
-    def wait_for_ready(self):
-        while True:
-            if self.frame is not None:
-                break
+    def wait_for_ready(self, timeout=10, wake_up_pause=3):
         
-        return
+        import time
+        start_time = time.time()
+        check_interval = 0.1
+        is_ready=False
 
-def capture_image(camera, path="/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/wrist/wristcaptured_image.jpg"):
-    """
-
-    """
-
-    frame = camera.get_frame()
-    if frame is not None:
-        cv2.imwrite(path, frame)
-        print(f"照片已保存为 {path}")
-    else:
-        print("无法获取照片")
+        while time.time() - start_time < timeout:
+            with self.lock:
+                if self.frame is not None:
+                    is_ready=True
+                    break
+            time.sleep(check_interval)
+        
+        if is_ready:
+            time.sleep(wake_up_pause)
+            return True
+        else:
+            return False
 
 
 if __name__ == "__main__":
 
     camera = WristCamera()
     camera.start()
-    camera.wait_for_ready()
 
-    capture_image(camera)
+    if camera.wait_for_ready():
+        capture_image(camera,"/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/wrist/test.jpg")
+    else:
+        print("等待相机准备超时")
 
     camera.stop()
-
     cv2.destroyAllWindows()
 
