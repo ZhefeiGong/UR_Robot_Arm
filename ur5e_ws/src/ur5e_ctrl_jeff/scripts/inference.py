@@ -23,19 +23,47 @@ if sys.version_info[0] < 3:
     input = raw_input
 
 
-def euler_to_quaternion(action_arrary):
+def euler_to_quaternion(action_array):
     """
     change the rotation from rx,ry,rz to x,y,z,w
     
     """
-    cartesian = action_arrary[:, 0:3]
-    euler = action_arrary[:, 3:6]
-    gripper = action_arrary[:, 6:]
+    cartesian = action_array[:, 0:3]
+    euler = action_array[:, 3:6]
+    gripper = action_array[:, 6:]
 
     rotation = R.from_euler("xyz", euler, degrees=False)
     quaternions = rotation.as_quat()
 
     return np.concatenate((cartesian, quaternions, gripper), axis=1)
+
+def quaternion_to_euler(action_array):
+    """
+    change the rotation from x,y,z,w to rx,ry,rz
+    
+    """
+    cartesian = action_array[:, 0:3]
+    quaternions = action_array[:, 3:7]
+    gripper = action_array[:, 7:]
+
+    rotation = R.from_quat(quaternions)
+    euler = rotation.as_euler("xyz", degrees=False)
+
+    return np.concatenate((cartesian, euler, gripper), axis=1)
+
+
+def format_state_array(state_array):
+    """
+    format the state array to the specified string format.
+
+    """
+
+    state = state_array[0]
+    state_str = "[{:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:d}]".format(
+        state[0], state[1], state[2], state[3], state[4], state[5], int(state[6])
+      )
+    
+    return state_str
 
 
 def action_to_command(action_arrary_quaternion, first_duration=10):
@@ -76,19 +104,22 @@ def generate_initial_img(camera_wrist, camera_scene, img_path_wrist, img_path_sc
     """
 
     """
-    # Wrist Camera
-    if camera_wrist.wait_for_ready(wake_up_pause=wake_up_pause):
-        capture_image(camera_wrist,img_path_wrist)
-    else:
-        print("[ERROR] it's timeout for wrist camera...")
 
-    # Scene Camera
-    if camera_scene.wait_for_ready(wake_up_pause=wake_up_pause):
-        capture_image(camera_scene,img_path_scene)
-    else:
-        print("[ERROR] it's timeout for scene camera...")
+    # # Wrist Camera
+    # if camera_wrist.wait_for_ready(wake_up_pause=wake_up_pause):
+    #     capture_image(camera_wrist,img_path_wrist)
+    # else:
+    #     print("[ERROR] it's timeout for wrist camera...")
+
+    # # Scene Camera
+    # if camera_scene.wait_for_ready(wake_up_pause=wake_up_pause):
+    #     capture_image(camera_scene,img_path_scene)
+    # else:
+    #     print("[ERROR] it's timeout for scene camera...")
     
     # Combine the image and save together
+
+    pass
     
 
 def run():
@@ -125,8 +156,8 @@ def run():
       # get the initial state
       ask_confirmation(prompt="we'll recieve the state from ur5e...")
       robot_state = motion_client.get_state()
-      robot_state_= euler_to_quaternion(robot_state)
-      print(robot_state_)
+      robot_state_euler_str= format_state_array(quaternion_to_euler(robot_state))
+      print(robot_state_euler_str)
       
       # get the actions
       ask_confirmation(prompt="we'll recieve the actions from VLA...")
@@ -165,7 +196,7 @@ def run():
           [-0.10484, -0.11471, 0.57986, -0.00207, -0.01322, 1.60787, 1],]
       )
       
-      ask_confirmation(prompt="we'll begin to move...")
+      ask_confirmation(prompt="we'll converse the instruction...")
       action_arrary_quaternion = euler_to_quaternion(action_arrary)
       pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion)
 
@@ -179,15 +210,10 @@ def run():
         ),]
       duration_list = [10.0]
       grip_list = [0]
+      
       ask_confirmation(prompt="we'll execute the trajectory...")
       motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
-
-
-    # out
-    camera_scene.stop()
-    camera_wrist.stop()
-    cv2.destroyAllWindows()
-
+      
 if __name__ == "__main__":
     run()
 
