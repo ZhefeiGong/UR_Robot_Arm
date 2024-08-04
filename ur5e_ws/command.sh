@@ -75,3 +75,8 @@ rosrun ur5e_ctrl_jeff gripper_listener.py
 
 rosrun ur5e_ctrl_jeff motion_commander.py
 
+rosrun ur5e_ctrl_jeff wrist_camera.py
+rosrun ur5e_ctrl_jeff realsense_camera.py
+rosrun ur5e_ctrl_jeff vla_client.py
+
+rosrun ur5e_ctrl_jeff inference.py
