@@ -4,6 +4,7 @@ import sys
 import rospy
 from ur5e_ctrl_jeff.msg import Robotiq2FGripper_robot_input  
 
+
 # Compatibility for python2 and python3
 if sys.version_info[0] < 3:
     input = raw_input

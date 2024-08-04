@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import rospy
 import cv2
 
 def capture_image(camera, path):
@@ -13,7 +14,6 @@ def capture_image(camera, path):
         print(f"照片已保存为 {path}")
     else:
         print("无法获取照片")
-
 
 def ask_confirmation(prompt=""):
     """

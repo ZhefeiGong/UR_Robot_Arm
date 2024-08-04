@@ -5,6 +5,7 @@ import rospy
 import geometry_msgs.msg as geometry_msgs
 from tf2_msgs.msg import TFMessage
 
+
 # Compatibility for python2 and python3
 if sys.version_info[0] < 3:
     input = raw_input

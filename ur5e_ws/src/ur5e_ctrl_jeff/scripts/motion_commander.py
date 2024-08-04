@@ -28,7 +28,6 @@ from ur5e_ctrl_jeff.msg import Robotiq2FGripper_robot_output
 from cartesian_listener import CartesianStateListener
 from gripper_listener import GripperStateListener  
 
-
 # Compatibility for python2 and python3
 if sys.version_info[0] < 3:
     input = raw_input
@@ -149,9 +148,9 @@ class GripperCommander:
         
         # Initialization
         # rospy.init_node('Robotiq2FGripperSimpleController')
-        self.gripper_pub = rospy.Publisher('Robotiq2FGripperRobotOutput', Robotiq2FGripper_robot_output)
+        self.gripper_pub = rospy.Publisher('Robotiq2FGripperRobotOutput', Robotiq2FGripper_robot_output, queue_size=10)
         self.command = Robotiq2FGripper_robot_output();
-
+        
         # Activate the gripper first
         self.gripper_activate()
 
@@ -199,8 +198,8 @@ class MotionCommander:
         self.is_verbose = verbose
         self.wait_duration = timeout_wait_duration
         
-        # initialize a node
-        rospy.init_node("motion_commander")
+        # initialize
+        # rospy.init_node("motion_commander")
         timeout = rospy.Duration(self.wait_duration)
 
         # initialize the services we need
@@ -400,6 +399,11 @@ class MotionCommander:
         pose_list_split = self.split_list(pose_list, mutation_indexes)
         duration_list_split = self.split_list(duration_list, mutation_indexes)
 
+        print(mutation_indexes)
+        print(mutation_actions)
+        print(pose_list_split)
+        print(duration_list_split)
+
         # run the trajectory for each time
         for mut_idx,(poses, durations) in enumerate(zip(pose_list_split, duration_list_split)):
 
@@ -416,6 +420,9 @@ class MotionCommander:
                 goal.trajectory.points.append(point)
 
             # send the goals and wait for answer
+            
+            print(goal)
+
             trajectory_client.send_goal(goal)
             trajectory_client.wait_for_result()
 
@@ -515,11 +522,29 @@ class MotionCommander:
             return GRIPPER_CLSOE
         else:
             return GRIPPER_OPEN
+    
+    def get_state(self):
+        """Get the state including cartesian and gripper, return a 7-dimension array"""
+
+        pose = self.get_arm_cartesian_state()
+        gripper = self.get_gripper_state()
+        state = np.array([[pose.position.x,
+                        pose.position.y,
+                        pose.position.z,
+                        pose.orientation.x,
+                        pose.orientation.y,
+                        pose.orientation.z,
+                        pose.orientation.w,
+                        gripper
+                        ]], float)
+        return state
 
 
 if __name__ == "__main__":
-
+    
+    rospy.init_node("motion_commander")
     client = MotionCommander()
+
     print("===== MotionCommander =====")
     
     # # JOINT TRAJECTORY CONTROLLER
@@ -555,7 +580,7 @@ if __name__ == "__main__":
     # duration_list = [5.0, 10.0, 15.0, 20.0, 25.0]
     # client.send_cartesian_trajectory(pose_list, duration_list)
     # print(client.get_arm_cartesian_state())
-
+    
     # # POSITION + GRIPPER
     # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
     # pose_list = [
@@ -574,32 +599,17 @@ if __name__ == "__main__":
     # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
     # print(client.get_arm_cartesian_state())
     
-    # # POSITION + GRIPPER
-    # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
-    # pose_list = [
-    #     geometry_msgs.Pose(
-    #         geometry_msgs.Vector3(0.3, -0.1, 0.65), geometry_msgs.Quaternion(0, 0, 0, 1)
-    #     ),
-    # ]
-    # duration_list = [8.0]
-    # grip_list = [1]
-    # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
-
-    client.gripper_commander.gripper_close()
-    client.gripper_state_listener.wait_for_gripper()
-
-    pose = client.get_arm_cartesian_state()
-    gripper = client.get_gripper_state()
-    state = np.array([[pose.position.x,
-                        pose.position.y,
-                        pose.position.z,
-                        pose.orientation.x,
-                        pose.orientation.y,
-                        pose.orientation.z,
-                        pose.orientation.w,
-                        gripper
-                        ]], float)
-    print(pose)
+    # POSITION + GRIPPER
+    # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
+    pose_list = [
+        geometry_msgs.Pose(
+            geometry_msgs.Vector3(-0.45198055, -0.59614217, 0.67455805), geometry_msgs.Quaternion(0.11625579, 0.94370034, -0.30423459, 0.05792736)
+        ),
+    ]
+    duration_list = [10.0]
+    grip_list = [0]
+    client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+    state = client.get_state()
     print(state)
     
     # raise ValueError(

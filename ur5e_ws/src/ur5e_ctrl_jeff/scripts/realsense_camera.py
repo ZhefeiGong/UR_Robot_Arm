@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
+import rospy
 import cv2               
 import threading                 
 import numpy as np                                 
-import pyrealsense2 as rs                
+import pyrealsense2 as rs 
 import PIL.Image
 import os
 
+import ur5e_ctrl_jeff.msg
 from utils import capture_image
 
 class RealsenseCamera:
@@ -20,7 +22,7 @@ class RealsenseCamera:
         self.cfg = rs.config()
 
         # color | resolution-width | resolution-height | image format | frame rate
-        self.cfg.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 30)
+        self.cfg.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 10)
 
         self.profile = None
         self.frameset = None
@@ -42,13 +44,18 @@ class RealsenseCamera:
     
     def get_frame(self):
         with self.lock:
+
             if self.frameset is None:
                 return None
             color_frame = self.frameset.get_color_frame()
+
             if not color_frame:
                 return None
             color_img = np.asanyarray(color_frame.get_data())
-            return color_img
+            
+            b,g,r = cv2.split(color_img)
+            img_rgb = cv2.merge([r,g,b])
+            return img_rgb
 
     def stop(self):
         self.running = False
@@ -87,3 +94,29 @@ if __name__ == "__main__":
     
     camera.stop()
     cv2.destroyAllWindows()
+
+# # ================== show ==================
+# import time
+# import numpy as np
+# import pyrealsense2 as rs
+# import cv2
+# framerate = 15
+# pipeline = rs.pipeline()
+# config = rs.config()
+# config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, framerate)
+# pipe_profile = pipeline.start(config)
+# save_path = "./images_jpg/"
+# shot_flag = False
+# while True:
+#     frames = pipeline.wait_for_frames()
+#     color_frame = frames.get_color_frame()
+#     img_color = np.asanyarray(color_frame.get_data())
+#     cv2.imshow("q", img_color)
+#     key = cv2.waitKey(1)
+#     if key & 0xFF == ord('q'):
+#         break
+#     elif key & 0xFF == ord('s'):
+#         shot_flag = ~shot_flag
+#         print("shot flag "+str(shot_flag))
+#     if shot_flag:
+#         cv2.imwrite(save_path + str(time.time()) + ".jpg", img_color)

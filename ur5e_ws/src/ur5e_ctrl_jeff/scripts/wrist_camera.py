@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
+import rospy
 import cv2
 import threading
 
+import ur5e_ctrl_jeff.msg
 from utils import capture_image
 
 class WristCamera:

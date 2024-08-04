@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import rospy
+
 import socket
 import json
 import time
@@ -183,8 +185,8 @@ if __name__ == "__main__":
         "model_path" : "/liujinxin/code/Reflect/test_checkpoints/13b/dino/finetune_13_12_no_1_5_base_dino_large_7500_c_1_6000/checkpoint-8000"
     }
 
-    initialImg = load_image("ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
-    finalImg = load_image("ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
+    initialImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
+    finalImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
 
     infer_param = {
         "initialImg" : initialImg,

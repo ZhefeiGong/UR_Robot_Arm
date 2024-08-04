@@ -1,18 +1,26 @@
 #!/usr/bin/env python
 
 import sys
+import rospy
 import numpy as np
-import motion_commander
-from motion_commander import MotionCommander
-from vla_client import VLAClient
-from vla_client import load_image, get_completeTraj, get_trajNdArray
 from scipy.spatial.transform import Rotation as R
 import geometry_msgs.msg as geometry_msgs
 
+import ur5e_ctrl_jeff.msg
+
+import motion_commander
+from motion_commander import MotionCommander
 from realsense_camera import RealsenseCamera
 from wrist_camera import WristCamera
+from vla_client import VLAClient
+from vla_client import load_image, get_completeTraj, get_trajNdArray
 
-from utils import capture_image
+from utils import capture_image, ask_confirmation
+
+
+# Compatibility for python2 and python3
+if sys.version_info[0] < 3:
+    input = raw_input
 
 
 def euler_to_quaternion(action_arrary):
@@ -64,6 +72,25 @@ def action_to_command(action_arrary_quaternion, first_duration=10):
     return pose_list, grip_list, duration_list
 
 
+def generate_initial_img(camera_wrist, camera_scene, img_path_wrist, img_path_scene, img_path_initial, wake_up_pause=0):
+    """
+
+    """
+    # Wrist Camera
+    if camera_wrist.wait_for_ready(wake_up_pause=wake_up_pause):
+        capture_image(camera_wrist,img_path_wrist)
+    else:
+        print("[ERROR] it's timeout for wrist camera...")
+
+    # Scene Camera
+    if camera_scene.wait_for_ready(wake_up_pause=wake_up_pause):
+        capture_image(camera_scene,img_path_scene)
+    else:
+        print("[ERROR] it's timeout for scene camera...")
+    
+    # Combine the image and save together
+    
+
 def run():
     """
     run the whole process
@@ -71,62 +98,95 @@ def run():
     """
 
     # initialization
+    rospy.init_node("inference")
+
     motion_client = MotionCommander()
+
+    # camera_scene = RealsenseCamera()
+    # camera_scene.start()
+    # camera_wrist = WristCamera()
+    # camera_wrist.start()
+
+    # get the initial image
+    ask_confirmation(prompt="we'll start the client to recieve the msg from VLA")
     vla_client = VLAClient(host="172.16.78.10", port=36095)
 
-    camera_wrist = WristCamera()
-    camera_scene = RealsenseCamera()
+    # run
+    while True:
+      
+      # get the initial image
+      ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
+      img_path_scene = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/scene/test.jpg"
+      img_path_wrist = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/wrist/test.jpg"
+      img_path_initial = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.jpg"
+      
+      # generate_initial_img(camera_wrist, camera_scene, img_path_wrist, img_path_scene, img_path_initial)
+
+      # get the initial state
+      ask_confirmation(prompt="we'll recieve the state from ur5e...")
+      robot_state = motion_client.get_state()
+      robot_state_= euler_to_quaternion(robot_state)
+      print(robot_state_)
+      
+      # get the actions
+      ask_confirmation(prompt="we'll recieve the actions from VLA...")
+      initialImg = load_image(img_path_initial)
+      infer_param = {
+          "initialImg" : initialImg,
+          # "finalImg" : finalImg,
+          "instruction" : "move the door to the left side",
+          "template" : "12:37:15", # "class_id : index : num_action"
+          "reward" : 0,
+          "prompt_img" : False,
+          "last_actions" : "",
+          "maximumLength" : 220,
+          "robot_state" : "[0.0259, -0.2313, 0.5713, 3.0905, -0.0291, 1.5001, 1]",
+      }
+      
+      # response = vla_client.infer_traj(infer_param)
+      # action_arrary = get_trajNdArray(get_completeTraj(response['traj']))
+      # print(action_arrary)
+
+      action_arrary = np.array(
+          [[0.01891, -0.22252, 0.57389, -0.01629, -0.07064, 1.48513, 1],
+          [0.01547, -0.21443, 0.57787, -0.01629, -0.0649, 1.48513, 1],
+          [0.00859, -0.20635, 0.57986, -0.01629, -0.0649, 1.48513, 1],
+          [0.00172, -0.19826, 0.58186, -0.0234, -0.0649, 1.48513, 1],
+          [-0.00516, -0.19018, 0.58385, -0.03051, -0.0649, 1.48513, 1],
+          [-0.01203, -0.18479, 0.58385, -0.04473, -0.05916, 1.48513, 1],
+          [-0.01891, -0.174, 0.58385, -0.05184, -0.04768, 1.50968, 1],
+          [-0.02922, -0.16592, 0.58186, -0.05184, -0.04193, 1.50968, 1],
+          [-0.03953, -0.15783, 0.58186, -0.03762, -0.03619, 1.50968, 1],
+          [-0.04984, -0.14975, 0.57986, -0.03762, -0.03045, 1.53423, 1],
+          [-0.06016, -0.14166, 0.57986, -0.03762, -0.03045, 1.53423, 1],
+          [-0.07047, -0.13357, 0.58186, -0.04473, -0.03045, 1.55878, 1],
+          [-0.08078, -0.12549, 0.58186, -0.03051, -0.02471, 1.55878, 1],
+          [-0.09453, -0.1201, 0.57986, -0.01629, -0.01896, 1.58332, 1],
+          [-0.10484, -0.11471, 0.57986, -0.00207, -0.01322, 1.60787, 1],]
+      )
+      
+      ask_confirmation(prompt="we'll begin to move...")
+      action_arrary_quaternion = euler_to_quaternion(action_arrary)
+      pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion)
+
+      print(pose_list)
+      print(grip_list)
+      print(duration_list)
+
+      pose_list = [
+        geometry_msgs.Pose(
+            geometry_msgs.Vector3(-0.45198055, -0.59614217, 0.67455805), geometry_msgs.Quaternion(0.11625579, 0.94370034, -0.30423459, 0.05792736)
+        ),]
+      duration_list = [10.0]
+      grip_list = [0]
+      ask_confirmation(prompt="we'll execute the trajectory...")
+      motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
 
 
-    # get the images
-    ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
-
-    # 
-    robot_state = motion_client.get_arm_cartesian_state()
-
-    # get the actions
-    initialImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png")
-    infer_param = {
-        "initialImg" : initialImg,
-        # "finalImg" : finalImg,
-        "instruction" : "move the door to the left side",
-        "template" : "12:37:15", # "0:0:*" for random dialogue
-        "reward" : 0,
-        "prompt_img" : False,
-        "last_actions" : "",
-        "maximumLength" : 220,
-        "robot_state" : "[0.0259, -0.2313, 0.5713, 3.0905, -0.0291, 1.5001, 1]",
-    }
-    response = vla_client.infer_traj(infer_param)
-    action_arrary = get_trajNdArray(get_completeTraj(response))
-
-    """
-    action_arrary = np.array(
-        [[0.01891, -0.22252, 0.57389, -0.01629, -0.07064, 1.48513, 1],
-        [0.01547, -0.21443, 0.57787, -0.01629, -0.0649, 1.48513, 1],
-        [0.00859, -0.20635, 0.57986, -0.01629, -0.0649, 1.48513, 1],
-        [0.00172, -0.19826, 0.58186, -0.0234, -0.0649, 1.48513, 1],
-        [-0.00516, -0.19018, 0.58385, -0.03051, -0.0649, 1.48513, 1],
-        [-0.01203, -0.18479, 0.58385, -0.04473, -0.05916, 1.48513, 1],
-        [-0.01891, -0.174, 0.58385, -0.05184, -0.04768, 1.50968, 1],
-        [-0.02922, -0.16592, 0.58186, -0.05184, -0.04193, 1.50968, 1],
-        [-0.03953, -0.15783, 0.58186, -0.03762, -0.03619, 1.50968, 1],
-        [-0.04984, -0.14975, 0.57986, -0.03762, -0.03045, 1.53423, 1],
-        [-0.06016, -0.14166, 0.57986, -0.03762, -0.03045, 1.53423, 1],
-        [-0.07047, -0.13357, 0.58186, -0.04473, -0.03045, 1.55878, 1],
-        [-0.08078, -0.12549, 0.58186, -0.03051, -0.02471, 1.55878, 1],
-        [-0.09453, -0.1201, 0.57986, -0.01629, -0.01896, 1.58332, 1],
-        [-0.10484, -0.11471, 0.57986, -0.00207, -0.01322, 1.60787, 1],]
-    )
-    """
-    
-    action_arrary_quaternion = euler_to_quaternion(action_arrary)
-    print(action_arrary_quaternion)
-    pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion)
-
-    ask_confirmation(prompt="we'll execute the trajectory...")
-    motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
-
+    # out
+    camera_scene.stop()
+    camera_wrist.stop()
+    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     run()
