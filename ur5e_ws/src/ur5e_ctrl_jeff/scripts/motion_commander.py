@@ -420,9 +420,6 @@ class MotionCommander:
                 goal.trajectory.points.append(point)
 
             # send the goals and wait for answer
-            
-            print(goal)
-
             trajectory_client.send_goal(goal)
             trajectory_client.wait_for_result()
 

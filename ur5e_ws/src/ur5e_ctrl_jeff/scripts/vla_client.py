@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# import rospy
-
 import socket
 import json
 import time
@@ -87,7 +85,6 @@ class VLAClient:
         while attempts < max_retries:
             response = None
             try:
-                # self.sock.settimeout(5.0) # set a timeout for socket operations (optional)
                 data = json.dumps(data).encode("utf-8")
                 response = self.client.inference(data)
                 return json.loads(response)
@@ -137,9 +134,7 @@ class VLAClient:
         self.sock.close()
 
 def get_completeTraj(traj):
-    """
-    
-    """
+    """ """
 
     # check
     if traj == "" or traj == None:
@@ -157,9 +152,7 @@ def get_completeTraj(traj):
     return traj[first_open_index:last_close_index + 1]
 
 def get_trajNdArray(traj: str) -> np.ndarray:
-    """
-    
-    """
+    """ """
     
     # remove the "
     traj = traj.replace('"', "")
@@ -185,10 +178,12 @@ if __name__ == "__main__":
         "model_path" : "/liujinxin/code/Reflect/test_checkpoints/13b/dino/finetune_13_12_no_1_5_base_dino_large_7500_c_1_6000/checkpoint-8000"
     }
 
-    # initialImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
-    # finalImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
-    initialImg = load_image("/Users/zhefeigong/Downloads/workspace/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
-    finalImg = load_image("/Users/zhefeigong/Downloads/workspace/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
+    
+    initialImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.jpg") # 
+    finalImg = load_image("/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.jpg") # 
+
+    # initialImg = load_image("/Users/zhefeigong/Downloads/workspace/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
+    # finalImg = load_image("/Users/zhefeigong/Downloads/workspace/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.png") # 
     
     infer_param = {
         "initialImg" : initialImg,
@@ -204,7 +199,7 @@ if __name__ == "__main__":
     
     # Template : """{instruction}"" following ""{initialImg}"", describe the next ""{step}"" actions.","{actions}"
     
-    client = VLAClient(host="172.16.78.10", port=36095)
+    client = VLAClient(host="192.168.0.9", port=5050)
     
     # result2laod = client.load_model(load_param)
     # print(result2laod)
