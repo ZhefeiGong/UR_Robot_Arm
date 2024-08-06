@@ -598,10 +598,23 @@ if __name__ == "__main__":
     
     # POSITION + GRIPPER
     # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
+
+    """
+    position: 
+        x: -0.5140640000000001
+        y: -0.6890584615384615
+        z: 0.5902399999999999
+        orientation: 
+        x: -0.41373427121606693
+        y: -0.8780025890263642
+        z: 0.11449318779703765
+        w: 0.21172320711812312
+    """
+    
     pose_list = [
         geometry_msgs.Pose(
-            geometry_msgs.Vector3(x=-0.45198055, y=-0.59614217, z=0.67455805), 
-            geometry_msgs.Quaternion(x=0.11625579, y=0.94370034, z=-0.30423459, w=0.05792736)
+            geometry_msgs.Vector3(x=-0.2862943306897481, y=-0.6872491842681708, z=0.5960513700027534), 
+            geometry_msgs.Quaternion(x=-0.4125877485290233, y=-0.8766820482510818, z=0.12091663142395062, w=0.2158219272528257)
         ),
     ]
     duration_list = [12.0]

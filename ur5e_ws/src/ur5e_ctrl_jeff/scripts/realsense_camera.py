@@ -20,9 +20,9 @@ class RealsenseCamera:
 
         self.pipe = rs.pipeline()
         self.cfg = rs.config()
-
+        
         # color | resolution-width | resolution-height | image format | frame rate
-        self.cfg.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 15)
+        self.cfg.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 10)
 
         self.profile = None
         self.frameset = None
@@ -81,42 +81,48 @@ class RealsenseCamera:
         else:
             return False
 
+def test():
+    """
+    test
+
+    """
+
+    import time
+    import numpy as np
+    import pyrealsense2 as rs
+    import cv2
+    framerate = 15
+    pipeline = rs.pipeline()
+    config = rs.config()
+    config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, framerate)
+    pipe_profile = pipeline.start(config)
+    save_path = "./images_jpg/"
+    shot_flag = False
+    while True:
+        frames = pipeline.wait_for_frames()
+        color_frame = frames.get_color_frame()
+        img_color = np.asanyarray(color_frame.get_data())
+        cv2.imshow("q", img_color)
+        key = cv2.waitKey(1)
+        if key & 0xFF == ord('q'):
+            break
+        elif key & 0xFF == ord('s'):
+            shot_flag = ~shot_flag
+            print("shot flag "+str(shot_flag))
+        if shot_flag:
+            cv2.imwrite(save_path + str(time.time()) + ".jpg", img_color)
 
 if __name__ == "__main__":
 
+    # capture one image
     camera = RealsenseCamera()
     camera.start()
-
     if camera.wait_for_ready():
         capture_image(camera,"/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/scene/test.jpg")
     else:
         print("等待相机准备超时")
-    
     camera.stop()
     cv2.destroyAllWindows()
     
-# # ================== show ==================
-# import time
-# import numpy as np
-# import pyrealsense2 as rs
-# import cv2
-# framerate = 15
-# pipeline = rs.pipeline()
-# config = rs.config()
-# config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, framerate)
-# pipe_profile = pipeline.start(config)
-# save_path = "./images_jpg/"
-# shot_flag = False
-# while True:
-#     frames = pipeline.wait_for_frames()
-#     color_frame = frames.get_color_frame()
-#     img_color = np.asanyarray(color_frame.get_data())
-#     cv2.imshow("q", img_color)
-#     key = cv2.waitKey(1)
-#     if key & 0xFF == ord('q'):
-#         break
-#     elif key & 0xFF == ord('s'):
-#         shot_flag = ~shot_flag
-#         print("shot flag "+str(shot_flag))
-#     if shot_flag:
-#         cv2.imwrite(save_path + str(time.time()) + ".jpg", img_color)
+    # # 
+    # test()

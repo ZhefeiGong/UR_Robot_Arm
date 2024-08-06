@@ -3,106 +3,27 @@
 import sys
 import rospy
 import numpy as np
-from scipy.spatial.transform import Rotation as R
 import geometry_msgs.msg as geometry_msgs
 
 import ur5e_ctrl_jeff.msg
 
 import motion_commander
 from motion_commander import MotionCommander
+
 from realsense_camera import RealsenseCamera
 from wrist_camera import WristCamera
+
 from vla_client import VLAClient
 from vla_client import load_image, get_completeTraj, get_trajNdArray
 
 from utils import capture_image, ask_confirmation, generate_initial_img
+from utils import euler_to_quaternion, quaternion_to_euler, format_state_array, action_to_command
+from utils import cartesian_linear_mapping
 
 
 # Compatibility for python2 and python3
 if sys.version_info[0] < 3:
     input = raw_input
-
-
-def euler_to_quaternion(action_array):
-    """
-    change the rotation from rx,ry,rz to x,y,z,w
-    
-    """
-
-    cartesian = action_array[:, 0:3]
-    euler = action_array[:, 3:6]
-    gripper = action_array[:, 6:]
-
-    rotation = R.from_euler("xyz", euler, degrees=False)
-    quaternions = rotation.as_quat(scalar_first=False) # [x,y,z,w]
-    
-    return np.concatenate((cartesian, quaternions, gripper), axis=1)
-
-def quaternion_to_euler(action_array):
-    """
-    change the rotation from x,y,z,w to rx,ry,rz
-    
-    """
-
-    cartesian = action_array[:, 0:3]
-    quaternions = action_array[:, 3:7]
-    gripper = action_array[:, 7:]
-
-    rotation = R.from_quat(quaternions) # [x,y,z,w]
-    euler = rotation.as_euler("xyz", degrees=False)
-
-    return np.concatenate((cartesian, euler, gripper), axis=1)
-
-
-def format_state_array(state_array):
-    """
-    format the state array to the specified string format.
-
-    """
-
-    state = state_array[0]
-    state_str = "[{:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:.4f}, {:d}]".format(
-        state[0], state[1], state[2], state[3], state[4], state[5], int(state[6])
-      )
-    
-    return state_str
-
-
-def action_to_command(action_arrary_quaternion, first_duration=10):
-    """
-    get the inputs for trajectory moving
-
-    """
-
-    duration = 2
-
-    pose_list = []
-    grip_list = []
-    duration_list = []
-
-    for idx, action in enumerate(action_arrary_quaternion):
-        
-        # (x,y,z) + (x,y,z,w)
-        pose_list.append(
-            geometry_msgs.Pose(
-                # [x,y,z]
-                geometry_msgs.Vector3(x=action[0], y=action[1], z=action[2]),
-                # [x,y,z,w]
-                geometry_msgs.Quaternion(x=action[3], y=action[4], z=action[5], w=action[6]),
-            )
-        )
-
-        # gripper
-        grip_list.append(action[7])
-
-        # duration
-        if idx == 0:
-            duration_list.append(first_duration)
-        else:
-            duration_list.append(duration)
-
-    return pose_list, grip_list, duration_list
-    
 
 def run():
     """
@@ -112,18 +33,28 @@ def run():
 
     # initialization
     rospy.init_node("inference")
-
     motion_client = MotionCommander()
     
-    # camera_scene = RealsenseCamera()
-    # camera_scene.start()
-    # camera_wrist = WristCamera()
-    # camera_wrist.start()
-
     # get the initial image
     ask_confirmation(prompt="we'll start the client to recieve the msg from VLA")
     vla_client = VLAClient(host="192.168.2.5", port=5050)
 
+    # [[x_min,x_max],[y...],[z...],[rx...],[ry...],[rz...]]
+
+    cart_vla = np.array([[0.18, 0.68],
+                         [-0.27, 0.38],
+                         [-0.20, 0.20],
+                         [-1.0,1.0],
+                         [-0.51,0.40],
+                         [0.77,2.60]])
+
+    cart_ur5e = np.array([[-0.80, 0.00],
+                          [-0.80, 0.00],
+                          [0.35, 0.95],
+                          [-1.0,1.0],
+                          [-0.51,0.40],
+                          [0.77,2.60]])
+    
     # run
     while True:
       
@@ -132,16 +63,19 @@ def run():
       img_path_scene = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/scene/test.jpg"
       img_path_wrist = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/wrist/test.jpg"
       img_path_initial = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.jpg"
-
-      generate_initial_img(img_path_scene, img_path_wrist, img_path_initial, 'horizontal')
+      generate_initial_img(img_path_scene, img_path_wrist, img_path_initial)
       
       # get the initial state
       ask_confirmation(prompt="we'll recieve the state from ur5e...")
-      print('[INFO] robot : ', motion_client.get_arm_cartesian_state())
+      # print('[INFO] robot : ', motion_client.get_arm_cartesian_state())
       robot_state = motion_client.get_state()
-      print('[INFO] robot state | quat : ', robot_state)
-      robot_state_euler_str= format_state_array(quaternion_to_euler(robot_state))
-      print('[INFO] robot state | euler : ', robot_state_euler_str)
+      print('[INFO] robot state | quat : \n', robot_state)
+      robot_state_euler = quaternion_to_euler(robot_state)
+      # print('[INFO] robot state | euler | ur5e : \n', robot_state_euler)
+      robot_state_euler_vla = cartesian_linear_mapping(robot_state_euler, cart_ur5e, cart_vla)
+      # print('[INFO] robot state | euler | vla: \n', robot_state_euler_vla)
+      robot_state_euler_str= format_state_array(robot_state_euler_vla)
+      print('[INFO] robot state | euler | vla | str: \n', robot_state_euler_str)
       
       # get the actions
       ask_confirmation(prompt="we'll recieve the action prediction from VLA...")
@@ -149,37 +83,20 @@ def run():
       infer_param = {
           "initialImg" : initialImg,
           # "finalImg" : finalImg,
-          "instruction" : "grab the plastic water bottle",
+          "instruction" : "sweep the green cloth to the left side of the table", # 
           "template" : "12:37:15", # "class_id : index : num_action"
           "reward" : 0,
           "prompt_img" : False,
           "last_actions" : "",
-          "maximumLength" : 220,
+          "maximumLength" : 1024,
           "robot_state" : robot_state_euler_str,
       }
       
       response = vla_client.infer_traj(infer_param)
-      action_arrary = get_trajNdArray(get_completeTraj(response['traj']))
+      action_arrary_vla = get_trajNdArray(get_completeTraj(response['traj']))
+      action_arrary = cartesian_linear_mapping(action_arrary_vla, cart_vla, cart_ur5e)
       print(action_arrary)
 
-      # action_arrary = np.array(
-      #     [[0.01891, -0.22252, 0.57389, -0.01629, -0.07064, 1.48513, 1],
-      #     [0.01547, -0.21443, 0.57787, -0.01629, -0.0649, 1.48513, 1],
-      #     [0.00859, -0.20635, 0.57986, -0.01629, -0.0649, 1.48513, 1],
-      #     [0.00172, -0.19826, 0.58186, -0.0234, -0.0649, 1.48513, 1],
-      #     [-0.00516, -0.19018, 0.58385, -0.03051, -0.0649, 1.48513, 1],
-      #     [-0.01203, -0.18479, 0.58385, -0.04473, -0.05916, 1.48513, 1],
-      #     [-0.01891, -0.174, 0.58385, -0.05184, -0.04768, 1.50968, 1],
-      #     [-0.02922, -0.16592, 0.58186, -0.05184, -0.04193, 1.50968, 1],
-      #     [-0.03953, -0.15783, 0.58186, -0.03762, -0.03619, 1.50968, 1],
-      #     [-0.04984, -0.14975, 0.57986, -0.03762, -0.03045, 1.53423, 1],
-      #     [-0.06016, -0.14166, 0.57986, -0.03762, -0.03045, 1.53423, 1],
-      #     [-0.07047, -0.13357, 0.58186, -0.04473, -0.03045, 1.55878, 1],
-      #     [-0.08078, -0.12549, 0.58186, -0.03051, -0.02471, 1.55878, 1],
-      #     [-0.09453, -0.1201, 0.57986, -0.01629, -0.01896, 1.58332, 1],
-      #     [-0.10484, -0.11471, 0.57986, -0.00207, -0.01322, 1.60787, 1],]
-      # )
-      
       ask_confirmation(prompt="we'll converse the instruction...")
       action_arrary_quaternion = euler_to_quaternion(action_arrary)
       pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=2)
@@ -188,19 +105,12 @@ def run():
       print(grip_list)
       print(duration_list)
 
-      # pose_list = [
-      #   geometry_msgs.Pose(
-      #       geometry_msgs.Vector3(-0.45198055, -0.59614217, 0.67455805), geometry_msgs.Quaternion(0.11625579, 0.94370034, -0.30423459, 0.05792736)
-      #   ),]
-      # duration_list = [10.0]
-      # grip_list = [0]
-      
       ask_confirmation(prompt="we'll execute the trajectory...")
       motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
       
 if __name__ == "__main__":
-    run()
 
+    run()
 
 """
 

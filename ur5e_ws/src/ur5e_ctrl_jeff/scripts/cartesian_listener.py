@@ -2,9 +2,11 @@
 
 import sys
 import rospy
+import numpy as np
 import geometry_msgs.msg as geometry_msgs
 from tf2_msgs.msg import TFMessage
-
+import ur5e_ctrl_jeff.msg
+from utils import quaternion_to_euler
 
 # Compatibility for python2 and python3
 if sys.version_info[0] < 3:
@@ -34,10 +36,21 @@ class CartesianStateListener():
             
             # print the info
             if self.is_verbose:
+                
                 print("[MSG] Frame ID : ", transform.header.frame_id) # the name of the coordinate we use
                 print("[MSG] Child Frame ID : ", transform.child_frame_id) # the name of the child coordinate (end-effector | gripper)
                 print("[MSG] Translation : \n", transform.transform.translation)
                 print("[MSG] Rotation : \n", transform.transform.rotation)
+                
+                # state = np.array([[transform.transform.translation.x, 
+                #                     transform.transform.translation.y, 
+                #                     transform.transform.translation.z,
+                #                     transform.transform.rotation.x,
+                #                     transform.transform.rotation.y,
+                #                     transform.transform.rotation.z,
+                #                     transform.transform.rotation.w,]])
+                # state_euler = quaternion_to_euler(state)
+                # print(state_euler[:,3:])
             
             # save the cartesian info
             self.cartesian_pose.position = transform.transform.translation          # x,y,z | geometry_msgs.Vector3

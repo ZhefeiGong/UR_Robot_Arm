@@ -8,13 +8,13 @@ import time
 import ur5e_ctrl_jeff.msg
 from utils import capture_image
 
-class WristCamera:
+class SceneCamera:
     """
     the class for wrist camera | open another thread for picture capturing
 
     """
     
-    def __init__(self, camera_id=0):
+    def __init__(self, camera_id=2):
         self.cap = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
 
         self.cap.set(cv2.CAP_PROP_FPS, 30.0)
@@ -40,6 +40,7 @@ class WristCamera:
 
     def get_frame(self):
         with self.lock:
+            self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
             return self.frame
 
     def stop(self):
@@ -70,7 +71,7 @@ class WristCamera:
 def test():
 
     # Open the default camera (usually the first camera found, index 0)
-    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(2, cv2.CAP_V4L2)
 
     if not cap.isOpened():
         print("Error: Could not open camera.")
@@ -99,6 +100,8 @@ def test():
         if not ret:
             print("ERROR")
 
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
+
         cv2.imshow("Camera",frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -112,10 +115,10 @@ def test():
 if __name__ == "__main__":
 
     # capture one image
-    camera = WristCamera()
+    camera = SceneCamera()
     camera.start()
     if camera.wait_for_ready():
-        capture_image(camera,"/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/wrist/test.jpg")
+        capture_image(camera,"/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/scene/test.jpg")
     else:
         print("等待相机准备超时")
     camera.stop()
@@ -123,4 +126,3 @@ if __name__ == "__main__":
 
     # # 
     # test()
-
