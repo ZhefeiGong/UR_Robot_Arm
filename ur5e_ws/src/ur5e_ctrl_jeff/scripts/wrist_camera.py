@@ -3,6 +3,7 @@
 import rospy
 import cv2
 import threading
+import time
 
 import ur5e_ctrl_jeff.msg
 from utils import capture_image
@@ -12,9 +13,15 @@ class WristCamera:
     the class for wrist camera | open another thread for picture capturing
 
     """
-
+    
     def __init__(self, camera_id=0):
-        self.cap = cv2.VideoCapture(camera_id)
+        self.cap = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
+
+        self.cap.set(cv2.CAP_PROP_FPS, 30.0)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+
         self.frame = None
         self.running = False
         self.lock = threading.Lock()
@@ -61,55 +68,39 @@ class WristCamera:
 
 
 def test():
+
     # Open the default camera (usually the first camera found, index 0)
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
     if not cap.isOpened():
         print("Error: Could not open camera.")
         return
 
-    # # Set desired resolution (e.g., 1280x720)
-    # desired_width = 1280
-    # desired_height = 720
-    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
-    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
-
     # Verify if the resolution was set correctly
     actual_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     actual_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    # print(f"Set resolution: {desired_width}x{desired_height}")
     print(f"Actual resolution: {int(actual_width)}x{int(actual_height)}")
 
-    # # Check for the maximum resolution supported by the camera
-    # # This method may not directly give the max resolution, hence iterating to find the max is one approach
-    # max_width = 0
-    # max_height = 0
+    # Set desired resolution (e.g., 1280x720)
+    desired_width = 1280
+    desired_height = 720
+    cap.set(cv2.CAP_PROP_FPS, 30.0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    print(f"Desired resolution: {int(desired_width)}x{int(desired_height)}")
 
-    # for width in [1920, 1280, 640, 320]:
-    #     for height in [1080, 720, 480, 240]:
-    #         cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-    #         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-    #         actual_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-    #         actual_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    #         if actual_width == width and actual_height == height:
-    #             max_width = max(max_width, width)
-    #             max_height = max(max_height, height)
-
-    # print(f"Maximum resolution: {max_width}x{max_height}")
+    time.sleep(2)
 
     while True:
-        # Capture frame-by-frame
+
         ret, frame = cap.read()
 
-        # If frame is read correctly, ret is True
         if not ret:
-            print("Error: Could not read frame.")
-            break
+            print("ERROR")
+        
+        cv2.imshow("Camera",frame)
 
-        # Display the resulting frame
-        cv2.imshow('Camera Feed', frame)
-
-        # Press 'q' on the keyboard to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
@@ -132,3 +123,4 @@ if __name__ == "__main__":
 
     # # 
     # test()
+
