@@ -600,14 +600,16 @@ if __name__ == "__main__":
     # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
     pose_list = [
         geometry_msgs.Pose(
-            geometry_msgs.Vector3(-0.45198055, -0.59614217, 0.67455805), geometry_msgs.Quaternion(0.11625579, 0.94370034, -0.30423459, 0.05792736)
+            geometry_msgs.Vector3(x=-0.45198055, y=-0.59614217, z=0.67455805), 
+            geometry_msgs.Quaternion(x=0.11625579, y=0.94370034, z=-0.30423459, w=0.05792736)
         ),
     ]
-    duration_list = [10.0]
+    duration_list = [12.0]
     grip_list = [0]
     client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
-    state = client.get_state()
-    print(state)
+    
+    print(client.get_arm_cartesian_state())
+    print(client.get_state())
     
     # raise ValueError(
     #     "I only understand types 'joint_based' and 'cartesian', but got '{}'".format(

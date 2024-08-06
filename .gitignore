@@ -53,5 +53,5 @@ CATKIN_IGNORE
 # Mac folder attributes
 .DS_Store
 
-# ignore the image
-ur5e_ws/src/ur5e_ctrl_jeff/img
+# # ignore the image
+# ur5e_ws/src/ur5e_ctrl_jeff/img

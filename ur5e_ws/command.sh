@@ -56,7 +56,7 @@ source /opt/ros/noetic/setup.bash
 source devel/setup.bash
 
 roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
-# roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.0.183 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
+# roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.2.6 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
 roslaunch ur_robot_driver example_rviz.launch
 
 sudo usermod -a -G dialout $USER

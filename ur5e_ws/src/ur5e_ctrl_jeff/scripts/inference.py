@@ -28,13 +28,14 @@ def euler_to_quaternion(action_array):
     change the rotation from rx,ry,rz to x,y,z,w
     
     """
+
     cartesian = action_array[:, 0:3]
     euler = action_array[:, 3:6]
     gripper = action_array[:, 6:]
 
     rotation = R.from_euler("xyz", euler, degrees=False)
-    quaternions = rotation.as_quat()
-
+    quaternions = rotation.as_quat(scalar_first=False) # [x,y,z,w]
+    
     return np.concatenate((cartesian, quaternions, gripper), axis=1)
 
 def quaternion_to_euler(action_array):
@@ -42,11 +43,12 @@ def quaternion_to_euler(action_array):
     change the rotation from x,y,z,w to rx,ry,rz
     
     """
+
     cartesian = action_array[:, 0:3]
     quaternions = action_array[:, 3:7]
     gripper = action_array[:, 7:]
 
-    rotation = R.from_quat(quaternions)
+    rotation = R.from_quat(quaternions) # [x,y,z,w]
     euler = rotation.as_euler("xyz", degrees=False)
 
     return np.concatenate((cartesian, euler, gripper), axis=1)
@@ -83,8 +85,10 @@ def action_to_command(action_arrary_quaternion, first_duration=10):
         # (x,y,z) + (x,y,z,w)
         pose_list.append(
             geometry_msgs.Pose(
-                geometry_msgs.Vector3(action[0], action[1], action[2]),
-                geometry_msgs.Quaternion(action[3], action[4], action[5], action[6]),
+                # [x,y,z]
+                geometry_msgs.Vector3(x=action[0], y=action[1], z=action[2]),
+                # [x,y,z,w]
+                geometry_msgs.Quaternion(x=action[3], y=action[4], z=action[5], w=action[6]),
             )
         )
 
@@ -118,7 +122,7 @@ def run():
 
     # get the initial image
     ask_confirmation(prompt="we'll start the client to recieve the msg from VLA")
-    vla_client = VLAClient(host="192.168.0.9", port=5050)
+    vla_client = VLAClient(host="192.168.2.5", port=5050)
 
     # run
     while True:
@@ -130,13 +134,14 @@ def run():
       img_path_initial = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.jpg"
 
       generate_initial_img(img_path_scene, img_path_wrist, img_path_initial, 'horizontal')
-
+      
       # get the initial state
       ask_confirmation(prompt="we'll recieve the state from ur5e...")
+      print('[INFO] robot : ', motion_client.get_arm_cartesian_state())
       robot_state = motion_client.get_state()
-      print('[INFO] robot state | quat ; ', robot_state)
+      print('[INFO] robot state | quat : ', robot_state)
       robot_state_euler_str= format_state_array(quaternion_to_euler(robot_state))
-      print('[INFO] robot state | euler ; ', robot_state_euler_str)
+      print('[INFO] robot state | euler : ', robot_state_euler_str)
       
       # get the actions
       ask_confirmation(prompt="we'll recieve the action prediction from VLA...")

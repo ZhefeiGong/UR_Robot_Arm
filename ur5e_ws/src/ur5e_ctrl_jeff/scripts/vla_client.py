@@ -199,7 +199,7 @@ if __name__ == "__main__":
     
     # Template : """{instruction}"" following ""{initialImg}"", describe the next ""{step}"" actions.","{actions}"
     
-    client = VLAClient(host="192.168.0.9", port=5050)
+    client = VLAClient(host="192.168.2.5", port=5050)
     
     # result2laod = client.load_model(load_param)
     # print(result2laod)

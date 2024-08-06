@@ -22,7 +22,7 @@ class RealsenseCamera:
         self.cfg = rs.config()
 
         # color | resolution-width | resolution-height | image format | frame rate
-        self.cfg.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 10)
+        self.cfg.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 15)
 
         self.profile = None
         self.frameset = None
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     
     camera.stop()
     cv2.destroyAllWindows()
-
+    
 # # ================== show ==================
 # import time
 # import numpy as np
