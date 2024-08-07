@@ -7,9 +7,9 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
     """
     Handles HTTP requests and forwards them to the target server.
     """
-
+    
     target_host = "172.16.78.10"    # IP address of the remote server
-    target_port = 36095             # Port of the remote server
+    target_port = 37204             # Port of the remote server
 
     def do_POST(self):
         """
@@ -74,11 +74,11 @@ class ProxyServer:
         httpd.serve_forever()
 
 if __name__ == "__main__":
-
+    
     # Set the host and port for the proxy server
     proxy_host = "192.168.2.5"  # Replace with the IP address of computer2
     proxy_port = 5050           # Replace with the desired port for the proxy server
-
+    
     # Initialize and start the proxy server
     proxy_server = ProxyServer(proxy_host, proxy_port)
     proxy_server.start()

@@ -1,31 +1,45 @@
 #!/usr/bin/env python
 
-import json
-import rospy
-import cv2
 import os
+import cv2
+import json
+import time
+import rospy
+import argparse
 
 import ur5e_ctrl_jeff.msg
 
 import numpy as np
-
 from wrist_camera import WristCamera
 from scene_camera import SceneCamera
-
 from utils import capture_image, action_to_command, ask_confirmation
 from motion_commander import MotionCommander
 
-import time
-
-save_traj_path = "/home/robot/DATASET/Cloth/pose.csv"
-
 class NumpyEncoder(json.JSONEncoder):
+    """
+    
+    """
+
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(NumpyEncoder, self).default(obj)
 
-def collect_to_pose(id=0):
+def ensure_folder_exists(folder_path):
+    """
+    Check if the folder exists
+    
+    """
+
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    return
+
+def collect_to_pose(args):
+    """
+    
+    """
 
     rospy.init_node("collecting")
 
@@ -36,9 +50,13 @@ def collect_to_pose(id=0):
     camera_s.start()
     motion_client = MotionCommander()
 
-    root_path = "/home/robot/DATASET/Cloth/"+"traj"+str(id)+"/"
+    root_path = "/home/robot/DATASET/Cloth/"+"traj"+str(args['collect_id'])+"/"
     root_img_path_scene = root_path + "image/scene/"
     root_img_path_wrist = root_path + "image/wrist/"
+    ensure_folder_exists(root_path)
+    ensure_folder_exists(root_img_path_scene)
+    ensure_folder_exists(root_img_path_wrist)
+    
     data_list = []
 
     mode = "NONE"
@@ -46,7 +64,7 @@ def collect_to_pose(id=0):
 
     if camera_w.wait_for_ready() and camera_s.wait_for_ready():
         
-        print(" ---- begin ---- ")
+        rospy.loginfo(" ---- begin ---- ")
 
         window_name = "window"
         cv2.namedWindow(window_name)
@@ -96,13 +114,17 @@ def collect_to_pose(id=0):
                 break
         
     else:
-        print("[ERROR] 等待相机准备超时")
+        rospy.loginfo("[ERROR] wait for the camera to time out")
 
     camera_w.stop()
     camera_s.stop()
     cv2.destroyAllWindows()
 
 def save_data(file_path, new_data):
+    """
+    
+    """
+
     if os.path.exists(file_path):
         existing_data = np.loadtxt(file_path, delimiter=',')
         if existing_data.ndim == 1:
@@ -113,50 +135,39 @@ def save_data(file_path, new_data):
     
     np.savetxt(file_path, data_to_save, delimiter=',')
 
-def listen_to_pose(is_open:bool=True):
+def listen_to_pose(args):
+    """
+    
+    """
 
     rospy.init_node("listening")
     motion_client = MotionCommander()
-    pose_list = []
+    rospy.loginfo(" ---- begin ---- ")
 
-    print(" ---- begin ---- ")
-
-    # window_name = "window"
-    # cv2.namedWindow(window_name)
-    # blank_image = np.zeros((500,500,3),np.uint8)
-    # while True : 
-    #     cv2.imshow(window_name,blank_image)
-    #     key = cv2.waitKey(10) & 0xFF
-    #     if key == ord('c'):
-    #         robot_state = motion_client.get_state()
-    #         print(robot_state[0])
-    #         pose_list.append(robot_state[0])
-    #     elif key == ord('q'):
-    #         array = np.vstack(pose_list)
-    #         np.save(save_traj_path, array)
-    #         print("save to ", save_traj_path)
-    #         break
-
-    robot_state = motion_client.get_state()
-    if is_open : 
-        robot_state[0][-1]=0.0
+    robot_state = motion_client.get_state()[0]
+    if args['is_gripper_open'] : 
+        robot_state[-1]=0.0
     else :
-        robot_state[0][-1]=1.0
-    save_data(save_traj_path, robot_state[0])
-    print("save to ", save_traj_path)
+        robot_state[-1]=1.0
+    save_data(args['save_traj_path'], robot_state)
 
-def move_to_pose():
+    rospy.loginfo("save to ", args['save_traj_path'])
+
+def move_to_pose(args):
+    """
+    
+    """
 
     rospy.init_node("moving")
-    if os.path.exists(save_traj_path):
-        traj_arrary = np.loadtxt(save_traj_path, delimiter=',')
+    if os.path.exists(args['save_traj_path']):
+        traj_arrary = np.loadtxt(args['save_traj_path'], delimiter=',')
     motion_client = MotionCommander()
+    rospy.loginfo(" ---- begin ---- ")
 
     pose_list, grip_list, duration_list = action_to_command(traj_arrary, first_duration=10, duration=10)
-
-    print(pose_list)
-    print(grip_list)
-    print(duration_list)
+    rospy.loginfo(pose_list)
+    rospy.loginfo(grip_list)
+    rospy.loginfo(duration_list)
 
     ask_confirmation(prompt="we'll execute the trajectory...")
     for i in range(len(traj_arrary)):
@@ -165,9 +176,29 @@ def move_to_pose():
 
 if __name__ == "__main__":
 
-    # collect_to_pose(id=40)
 
-    # is_open = True
-    # listen_to_pose(is_open)
+    ###
+    args = {
+        'collect_id': 1,
+        'is_gripper_open': True,
+        'save_traj_path': "/home/robot/DATASET/Cloth/pose.csv",
+        'command': "collect" ,
+        # 'command': "listen" , 
+        # 'command': "move" , 
+    }
 
-    # move_to_pose()
+    ###
+    if args['command'] == "collect":
+        collect_to_pose(args)
+    elif args['command'] == "listen":
+        listen_to_pose(args)
+    elif args['command'] == "move":
+        move_to_pose(args)
+    else:
+        rospy.logwarn("the command is not found")
+
+
+    """
+    rosrun 
+    
+    """
