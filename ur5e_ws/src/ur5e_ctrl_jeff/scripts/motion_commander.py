@@ -220,7 +220,7 @@ class MotionCommander:
 
         # 
         self.cartesian_state_listener = CartesianStateListener()
-        self.gripper_state_listener = GripperStateListener(interval=GRIPPER_SLEEP_INTERVAL, timeout_wait_duration=self.wait_duration )
+        self.gripper_state_listener = GripperStateListener(interval=GRIPPER_SLEEP_INTERVAL, timeout_wait_duration=self.wait_duration)
         self.gripper_commander = GripperCommander() 
 
     def send_joint_trajectory(self, position_list=[], velocity_list=[], duration_list=[]):
@@ -435,13 +435,13 @@ class MotionCommander:
                 
                 # show the movement of gripper
                 if self.is_verbose:
-                    rospy.loginfo("[INFO] The Gripper changed to {}".format(mutation_actions[mv_idx]))
+                    rospy.loginfo("[INFO] The Gripper changed to {}".format(mutation_actions[mut_idx]))
 
                 # command the gripper to move
-                if mutation_actions[mv_idx]==GRIPPER_OPEN :
+                if mutation_actions[mut_idx]==GRIPPER_OPEN :
                     print("OPEN")
                     self.gripper_commander.gripper_open()
-                elif mutation_actions[mv_idx]==GRIPPER_CLSOE :
+                elif mutation_actions[mut_idx]==GRIPPER_CLSOE :
                     print("CLOSE")
                     self.gripper_commander.gripper_close()
                 else:
@@ -555,28 +555,29 @@ if __name__ == "__main__":
     # duration_list = [5.0, 10.0, 15.0]
     # client.send_joint_trajectory(position_list, velocity_list, duration_list)
     
-    # # POSE TRAJECTORY CONTROLLER
-    # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
-    # pose_list = [
-    #     geometry_msgs.Pose(
-    #         geometry_msgs.Vector3(0.4, -0.1, 0.4), geometry_msgs.Quaternion(0, 0, 0, 1)
-    #     ),
-    #     geometry_msgs.Pose(
-    #         geometry_msgs.Vector3(0.4, -0.1, 0.6), geometry_msgs.Quaternion(0, 0, 0, 1)
-    #     ),
-    #     geometry_msgs.Pose(
-    #         geometry_msgs.Vector3(0.4, 0.3, 0.6), geometry_msgs.Quaternion(0, 0, 0, 1)
-    #     ),
-    #     geometry_msgs.Pose(
-    #         geometry_msgs.Vector3(0.4, 0.3, 0.4), geometry_msgs.Quaternion(0, 0, 0, 1)
-    #     ),
-    #     geometry_msgs.Pose(
-    #         geometry_msgs.Vector3(0.4, -0.1, 0.4), geometry_msgs.Quaternion(0, 0, 0, 1)
-    #     ),
-    # ]
-    # duration_list = [5.0, 10.0, 15.0, 20.0, 25.0]
-    # client.send_cartesian_trajectory(pose_list, duration_list)
-    # print(client.get_arm_cartesian_state())
+    # POSE TRAJECTORY CONTROLLER
+    # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
+    pose_list = [
+        geometry_msgs.Pose(
+            geometry_msgs.Vector3(-1.519791009070174947e-01,-3.131022253507395048e-01,1.013676147114260129e+00), 
+            geometry_msgs.Quaternion(-3.817350884507677566e-01,-7.129251057315758588e-01,5.668133858421183779e-01,1.572854141149138407e-01)
+        ),
+        geometry_msgs.Pose(
+            geometry_msgs.Vector3(-5.712233991576016745e-01,-4.502260737368067867e-01,7.264138187685256209e-01), 
+            geometry_msgs.Quaternion(5.036091149290695679e-01,7.681067146008192514e-01,-3.869030021392148577e-01,8.182909801016656492e-02)
+        ),
+        geometry_msgs.Pose(
+            geometry_msgs.Vector3(-7.632043884707433445e-01,-3.879991053728846229e-01,3.876896953747783203e-01), 
+            geometry_msgs.Quaternion(5.447764712748347504e-01,8.383633324432937517e-01,-1.910714013280295775e-02,6.605723731065349293e-04)
+        ),
+        geometry_msgs.Pose(
+            geometry_msgs.Vector3(-2.433018494073919402e-01,-4.929757010216171409e-01,8.479811315436367458e-01), 
+            geometry_msgs.Quaternion(-2.764537739283712825e-01,-9.060502273573407539e-01,2.989711706867989038e-01,1.151630821254677334e-01)
+        ),
+    ]
+    duration_list = [10.0, 10.0, 10.0, 10.0]
+    client.send_cartesian_trajectory(pose_list, duration_list)
+    print(client.get_arm_cartesian_state())
     
     # # POSITION + GRIPPER
     # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
@@ -611,23 +612,23 @@ if __name__ == "__main__":
         w: 0.21172320711812312
     """
     
-    pose_list = [
-        geometry_msgs.Pose(
-            geometry_msgs.Vector3(x=-0.2862943306897481, y=-0.6872491842681708, z=0.5960513700027534), 
-            geometry_msgs.Quaternion(x=-0.4125877485290233, y=-0.8766820482510818, z=0.12091663142395062, w=0.2158219272528257)
-        ),
-    ]
-    duration_list = [12.0]
-    grip_list = [0]
-    client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+    # pose_list = [
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(x=-0.2862943306897481, y=-0.6872491842681708, z=0.5960513700027534), 
+    #         geometry_msgs.Quaternion(x=-0.4125877485290233, y=-0.8766820482510818, z=0.12091663142395062, w=0.2158219272528257)
+    #     ),
+    # ]
+    # duration_list = [12.0]
+    # grip_list = [0]
+    # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
     
     print(client.get_arm_cartesian_state())
     print(client.get_state())
     
+
     # raise ValueError(
     #     "I only understand types 'joint_based' and 'cartesian', but got '{}'".format(
     #         trajectory_type
     #     )
     # )
 
-    

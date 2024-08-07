@@ -169,6 +169,7 @@ catkin_install_python(PROGRAMS
   scripts/wrist_camera.py
   scripts/scene_camera.py
   scripts/realsense_camera.py
+  scripts/data_collect.py
   scripts/inference.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

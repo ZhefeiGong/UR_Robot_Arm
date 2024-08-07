@@ -187,13 +187,12 @@ def format_state_array(state_array):
     return state_str
 
 
-def action_to_command(action_arrary_quaternion, first_duration=10):
+def action_to_command(action_arrary_quaternion, first_duration=10, duration=2):
     """
     get the inputs for trajectory moving
 
     """
-
-    duration = 2
+    
     gripper_crateria = 0.5
 
     pose_list = []

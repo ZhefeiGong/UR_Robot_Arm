@@ -30,7 +30,7 @@ def run():
     run the whole process
 
     """
-
+  
     # initialization
     rospy.init_node("inference")
     motion_client = MotionCommander()

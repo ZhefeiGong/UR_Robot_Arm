@@ -83,4 +83,5 @@ rosrun ur5e_ctrl_jeff vla_client.py
 
 rosrun ur5e_ctrl_jeff inference.py
 
+rosrun ur5e_ctrl_jeff data_collect.py
 
