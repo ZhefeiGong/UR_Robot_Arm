@@ -42,13 +42,9 @@ sudo usermod -a -G dialout $USER
 dmesg | grep tty
 
 rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
-
 rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
-
 rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
-
 roslaunch robotiq_2f_85_gripper_visualization view_robotiq_2f_85.launch
-
 
 ###### WORK FLOW ######
 cd UR_Robot_Arm/ur5e_ws/
@@ -77,9 +73,9 @@ rosrun ur5e_ctrl_jeff motion_commander.py
 
 rosrun ur5e_ctrl_jeff wrist_camera.py
 rosrun ur5e_ctrl_jeff scene_camera.py
-rosrun ur5e_ctrl_jeff realsense_camera.py
 
-rosrun ur5e_ctrl_jeff vla_client.py
+# rosrun ur5e_ctrl_jeff realsense_camera.py
+# rosrun ur5e_ctrl_jeff vla_client.py
 
 rosrun ur5e_ctrl_jeff inference.py
 

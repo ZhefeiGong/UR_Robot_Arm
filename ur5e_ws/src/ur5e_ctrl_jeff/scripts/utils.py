@@ -187,11 +187,13 @@ def format_state_array(state_array):
     return state_str
 
 
-def action_to_command(action_arrary_quaternion, first_duration=10, duration=2):
+def action_to_command(action_arrary_quaternion, first_duration=10, duration=2, fix_num = 4):
     """
     get the inputs for trajectory moving
 
     """
+    
+    action_arrary_quaternion = np.round(action_arrary_quaternion,fix_num)
     
     gripper_crateria = 0.5
 

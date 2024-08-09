@@ -25,35 +25,34 @@ from utils import cartesian_linear_mapping
 if sys.version_info[0] < 3:
     input = raw_input
 
+
 def run():
     """
     run the whole process
 
     """
-  
+
     # initialization
     rospy.init_node("inference")
     motion_client = MotionCommander()
     
     # get the initial image
     ask_confirmation(prompt="we'll start the client to recieve the msg from VLA")
-    vla_client = VLAClient(host="192.168.2.5", port=5050)
+    vla_client = VLAClient(host="192.168.2.3", port=5050)
 
-    # [[x_min,x_max],[y...],[z...],[rx...],[ry...],[rz...]]
-
-    cart_vla = np.array([[0.18, 0.68],
-                         [-0.27, 0.38],
-                         [-0.20, 0.20],
-                         [-1.0,1.0],
-                         [-0.51,0.40],
-                         [0.77,2.60]])
-
-    cart_ur5e = np.array([[-0.80, 0.00],
-                          [-0.80, 0.00],
-                          [0.35, 0.95],
-                          [-1.0,1.0],
-                          [-0.51,0.40],
-                          [0.77,2.60]])
+    # # [[x_min,x_max],[y...],[z...],[rx...],[ry...],[rz...]]
+    # cart_vla = np.array([[0.18, 0.68],
+    #                      [-0.27, 0.38],
+    #                      [-0.20, 0.20],
+    #                      [-1.0,1.0],
+    #                      [-0.51,0.40],
+    #                      [0.77,2.60]])
+    # cart_ur5e = np.array([[-0.80, 0.00],
+    #                       [-0.80, 0.00],
+    #                       [0.35, 0.95],
+    #                       [-1.0,1.0],
+    #                       [-0.51,0.40],
+    #                       [0.77,2.60]])
     
     # run
     while True:
@@ -72,9 +71,11 @@ def run():
       print('[INFO] robot state | quat : \n', robot_state)
       robot_state_euler = quaternion_to_euler(robot_state)
       # print('[INFO] robot state | euler | ur5e : \n', robot_state_euler)
-      robot_state_euler_vla = cartesian_linear_mapping(robot_state_euler, cart_ur5e, cart_vla)
-      # print('[INFO] robot state | euler | vla: \n', robot_state_euler_vla)
-      robot_state_euler_str= format_state_array(robot_state_euler_vla)
+      
+      # robot_state_euler = cartesian_linear_mapping(robot_state_euler, cart_ur5e, cart_vla)
+      # # print('[INFO] robot state | euler | vla: \n', robot_state_euler)
+      
+      robot_state_euler_str= format_state_array(robot_state_euler)
       print('[INFO] robot state | euler | vla | str: \n', robot_state_euler_str)
       
       # get the actions
@@ -84,7 +85,7 @@ def run():
           "initialImg" : initialImg,
           # "finalImg" : finalImg,
           "instruction" : "sweep the green cloth to the left side of the table", # 
-          "template" : "12:37:15", # "class_id : index : num_action"
+          "template" : "12:37:5", # "class_id : index : num_action"
           "reward" : 0,
           "prompt_img" : False,
           "last_actions" : "",
@@ -93,20 +94,26 @@ def run():
       }
       
       response = vla_client.infer_traj(infer_param)
-      action_arrary_vla = get_trajNdArray(get_completeTraj(response['traj']))
-      action_arrary = cartesian_linear_mapping(action_arrary_vla, cart_vla, cart_ur5e)
+      action_arrary = get_trajNdArray(get_completeTraj(response['traj']))
+
+      # action_arrary = cartesian_linear_mapping(action_arrary, cart_vla, cart_ur5e)
+      
       print(action_arrary)
 
       ask_confirmation(prompt="we'll converse the instruction...")
       action_arrary_quaternion = euler_to_quaternion(action_arrary)
-      pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=2)
+
+      pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=5, duration=5)
 
       print(pose_list)
       print(grip_list)
       print(duration_list)
 
       ask_confirmation(prompt="we'll execute the trajectory...")
-      motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+      for i in range(len(pose_list)):
+        print(f"ACTION - {i+1}")
+        motion_client.execute_arm_gripper_trajectory([pose_list[i]], [grip_list[i]], [duration_list[i]], is_ask_conf=False)
+      
       
 if __name__ == "__main__":
 

@@ -361,7 +361,7 @@ class MotionCommander:
 
         return result
 
-    def execute_arm_gripper_trajectory(self, pose_list=[], grip_list=[], duration_list=[]):
+    def execute_arm_gripper_trajectory(self, pose_list=[], grip_list=[], duration_list=[], is_ask_conf=True):
         """
         Execute the whole trajectory combining robot arm and gripper
         
@@ -390,8 +390,9 @@ class MotionCommander:
             sys.exit(-1)
 
         # ask the user to confitm the following actions
-        if self.is_verbose:
+        if is_ask_conf:
             self.ask_confirmation(pose_list)
+        if self.is_verbose:
             rospy.loginfo("[INFO] Executing trajectory using the {}".format(self.cartesian_trajectory_controller))
         
         # split the poses according to the mutation of gripper action
@@ -399,17 +400,13 @@ class MotionCommander:
         pose_list_split = self.split_list(pose_list, mutation_indexes)
         duration_list_split = self.split_list(duration_list, mutation_indexes)
 
-        print(mutation_indexes)
-        print(mutation_actions)
-        print(pose_list_split)
-        print(duration_list_split)
+        # print(mutation_indexes)
+        # print(mutation_actions)
+        # print(pose_list_split)
+        # print(duration_list_split)
 
         # run the trajectory for each time
         for mut_idx,(poses, durations) in enumerate(zip(pose_list_split, duration_list_split)):
-
-            # visulize the movement of the arm
-            if self.is_verbose : 
-                rospy.logwarn("[INFO] The robot will move to the following waypoints: {}".format(poses))
             
             # initial goals
             goal = FollowCartesianTrajectoryGoal()
@@ -418,6 +415,12 @@ class MotionCommander:
                 point.pose = pose
                 point.time_from_start = rospy.Duration(duration)
                 goal.trajectory.points.append(point)
+            
+            # # visulize the movement of the arm
+            # if is_ask_conf:
+            #     self.ask_confirmation(poses)
+            # if self.is_verbose : 
+            #     rospy.logwarn("[INFO] The robot will move to the following waypoints: {}".format(poses))
 
             # send the goals and wait for answer
             trajectory_client.send_goal(goal)
@@ -555,29 +558,29 @@ if __name__ == "__main__":
     # duration_list = [5.0, 10.0, 15.0]
     # client.send_joint_trajectory(position_list, velocity_list, duration_list)
     
-    # POSE TRAJECTORY CONTROLLER
-    # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
-    pose_list = [
-        geometry_msgs.Pose(
-            geometry_msgs.Vector3(-1.519791009070174947e-01,-3.131022253507395048e-01,1.013676147114260129e+00), 
-            geometry_msgs.Quaternion(-3.817350884507677566e-01,-7.129251057315758588e-01,5.668133858421183779e-01,1.572854141149138407e-01)
-        ),
-        geometry_msgs.Pose(
-            geometry_msgs.Vector3(-5.712233991576016745e-01,-4.502260737368067867e-01,7.264138187685256209e-01), 
-            geometry_msgs.Quaternion(5.036091149290695679e-01,7.681067146008192514e-01,-3.869030021392148577e-01,8.182909801016656492e-02)
-        ),
-        geometry_msgs.Pose(
-            geometry_msgs.Vector3(-7.632043884707433445e-01,-3.879991053728846229e-01,3.876896953747783203e-01), 
-            geometry_msgs.Quaternion(5.447764712748347504e-01,8.383633324432937517e-01,-1.910714013280295775e-02,6.605723731065349293e-04)
-        ),
-        geometry_msgs.Pose(
-            geometry_msgs.Vector3(-2.433018494073919402e-01,-4.929757010216171409e-01,8.479811315436367458e-01), 
-            geometry_msgs.Quaternion(-2.764537739283712825e-01,-9.060502273573407539e-01,2.989711706867989038e-01,1.151630821254677334e-01)
-        ),
-    ]
-    duration_list = [10.0, 10.0, 10.0, 10.0]
-    client.send_cartesian_trajectory(pose_list, duration_list)
-    print(client.get_arm_cartesian_state())
+    # # POSE TRAJECTORY CONTROLLER
+    # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
+    # pose_list = [
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(-1.519791009070174947e-01,-3.131022253507395048e-01,1.013676147114260129e+00), 
+    #         geometry_msgs.Quaternion(-3.817350884507677566e-01,-7.129251057315758588e-01,5.668133858421183779e-01,1.572854141149138407e-01)
+    #     ),
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(-5.712233991576016745e-01,-4.502260737368067867e-01,7.264138187685256209e-01), 
+    #         geometry_msgs.Quaternion(5.036091149290695679e-01,7.681067146008192514e-01,-3.869030021392148577e-01,8.182909801016656492e-02)
+    #     ),
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(-7.632043884707433445e-01,-3.879991053728846229e-01,3.876896953747783203e-01), 
+    #         geometry_msgs.Quaternion(5.447764712748347504e-01,8.383633324432937517e-01,-1.910714013280295775e-02,6.605723731065349293e-04)
+    #     ),
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(-2.433018494073919402e-01,-4.929757010216171409e-01,8.479811315436367458e-01), 
+    #         geometry_msgs.Quaternion(-2.764537739283712825e-01,-9.060502273573407539e-01,2.989711706867989038e-01,1.151630821254677334e-01)
+    #     ),
+    # ]
+    # duration_list = [10.0, 10.0, 10.0, 10.0]
+    # client.send_cartesian_trajectory(pose_list, duration_list)
+    # print(client.get_arm_cartesian_state())
     
     # # POSITION + GRIPPER
     # # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
@@ -625,7 +628,6 @@ if __name__ == "__main__":
     print(client.get_arm_cartesian_state())
     print(client.get_state())
     
-
     # raise ValueError(
     #     "I only understand types 'joint_based' and 'cartesian', but got '{}'".format(
     #         trajectory_type
