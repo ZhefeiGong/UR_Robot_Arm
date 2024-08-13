@@ -67,7 +67,7 @@ def collect_to_pose(args):
     camera_s.start()
     motion_client = MotionCommander()
 
-    root_path = "/home/robot/DATASET/Cloth/"+"traj"+str(args['collect_id'])+"/"
+    root_path = "/home/robot/DATASET/Bottle/"+"traj"+str(args['collect_id'])+"/"
     root_img_path_scene = root_path + "image/scene/"
     root_img_path_wrist = root_path + "image/wrist/"
     ensure_folder_exists(root_path)
@@ -113,7 +113,7 @@ def collect_to_pose(args):
                 }
                 data['imgs'] = '/image/scene/scene' + str(img_count) + '.jpg'
                 data['imgw'] = '/image/wrist/wrist' + str(img_count) + '.jpg'
-                data['task'] = args.task
+                data['task'] = args['task']
 
                 robot_state = motion_client.get_state()
                 data['pose'] = np.array(robot_state[0])
@@ -155,7 +155,7 @@ def listen_to_pose(args):
         robot_state[-1]=1.0
     save_data(args['save_traj_path'], robot_state)
 
-    rospy.loginfo("save to ", args['save_traj_path'])
+    rospy.loginfo(f"save to {args['save_traj_path']}")
 
 def move_to_pose(args):
     """
@@ -183,14 +183,16 @@ if __name__ == "__main__":
 
     ###
     args = {
-        'collect_id': 1,
+        'collect_id': 30,
         'is_gripper_open': True,
-        'save_traj_path': "/home/robot/DATASET/Cloth/pose.csv",
-        'task' : "Take the tiger out of the red bowl and put it in the grey bowl",
-
+        'save_traj_path': "/home/robot/DATASET/Bottle/pose.csv",
+        'task' : "Put the ranch bottle into the pot",
+        
         # 'command': "listen" , 
+        
         # 'command': "move" , 
-        # 'command': "collect" ,
+
+        'command': "collect" ,
         
     }
 
@@ -212,7 +214,7 @@ if __name__ == "__main__":
     2. Sweep the green cloth to the left side of the table.
     3. Pick up the blue cup and put it into the brown cup.
     4. Put the ranch bottle into the pot.
-
+    
     🌟 execute : 
     1. listen_to_pose
     2. move_to_pose

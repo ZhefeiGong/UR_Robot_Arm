@@ -114,15 +114,15 @@ def test():
 
 if __name__ == "__main__":
 
-    # capture one image
-    camera = SceneCamera()
-    camera.start()
-    if camera.wait_for_ready():
-        capture_image(camera,"/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/scene/test.jpg")
-    else:
-        print("等待相机准备超时")
-    camera.stop()
-    cv2.destroyAllWindows()
+    # # capture one image
+    # camera = SceneCamera()
+    # camera.start()
+    # if camera.wait_for_ready():
+    #     capture_image(camera,"/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/scene/test.jpg")
+    # else:
+    #     print("等待相机准备超时")
+    # camera.stop()
+    # cv2.destroyAllWindows()
 
-    # # 
-    # test()
+    # 
+    test()
