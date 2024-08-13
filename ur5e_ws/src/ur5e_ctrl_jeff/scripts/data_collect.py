@@ -187,10 +187,11 @@ if __name__ == "__main__":
         'is_gripper_open': True,
         'save_traj_path': "/home/robot/DATASET/Cloth/pose.csv",
         'task' : "Take the tiger out of the red bowl and put it in the grey bowl",
-        
-        'command': "collect" ,
+
         # 'command': "listen" , 
         # 'command': "move" , 
+        # 'command': "collect" ,
+        
     }
 
     ###
@@ -207,7 +208,7 @@ if __name__ == "__main__":
     """
 
     🌟 category :
-    1. Take the tiger out of the red bowl and put it in the grey bowl
+    1. Take the tiger out of the red bowl and put it in the grey bowl.
     2. Sweep the green cloth to the left side of the table.
     3. Pick up the blue cup and put it into the brown cup.
     4. Put the ranch bottle into the pot.
