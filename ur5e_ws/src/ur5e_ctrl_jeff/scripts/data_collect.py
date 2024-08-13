@@ -36,12 +36,29 @@ def ensure_folder_exists(folder_path):
 
     return
 
+def save_data(file_path, new_data):
+    """
+    
+    """
+
+    if os.path.exists(file_path):
+        existing_data = np.loadtxt(file_path, delimiter=',')
+        if existing_data.ndim == 1:
+            existing_data = existing_data[np.newaxis, :]
+        data_to_save = np.vstack((existing_data, new_data))
+    else:
+        data_to_save = new_data
+    
+    np.savetxt(file_path, data_to_save, delimiter=',')
+
 def collect_to_pose(args):
     """
     
     """
 
     rospy.init_node("collecting")
+
+    time_sleep = 0.5
 
     camera_w = WristCamera()
     camera_s = SceneCamera()
@@ -91,17 +108,19 @@ def collect_to_pose(args):
                 data = {
                     "imgw" : None,
                     "imgs" : None,
+                    "task" : None,
                     "pose" : None,
                 }
                 data['imgs'] = '/image/scene/scene' + str(img_count) + '.jpg'
                 data['imgw'] = '/image/wrist/wrist' + str(img_count) + '.jpg'
+                data['task'] = args.task
 
                 robot_state = motion_client.get_state()
                 data['pose'] = np.array(robot_state[0])
                 data_list.append(data)
 
                 img_count += 1
-                time.sleep(0.5)
+                time.sleep(time_sleep)
 
             ###
             elif mode == "quit":
@@ -112,28 +131,13 @@ def collect_to_pose(args):
                     json_file.write(json_str)
 
                 break
-        
+            
     else:
         rospy.loginfo("[ERROR] wait for the camera to time out")
 
     camera_w.stop()
     camera_s.stop()
     cv2.destroyAllWindows()
-
-def save_data(file_path, new_data):
-    """
-    
-    """
-
-    if os.path.exists(file_path):
-        existing_data = np.loadtxt(file_path, delimiter=',')
-        if existing_data.ndim == 1:
-            existing_data = existing_data[np.newaxis, :]
-        data_to_save = np.vstack((existing_data, new_data))
-    else:
-        data_to_save = new_data
-    
-    np.savetxt(file_path, data_to_save, delimiter=',')
 
 def listen_to_pose(args):
     """
@@ -182,6 +186,8 @@ if __name__ == "__main__":
         'collect_id': 1,
         'is_gripper_open': True,
         'save_traj_path': "/home/robot/DATASET/Cloth/pose.csv",
+        'task' : "Take the tiger out of the red bowl and put it in the grey bowl",
+        
         'command': "collect" ,
         # 'command': "listen" , 
         # 'command': "move" , 
@@ -199,6 +205,16 @@ if __name__ == "__main__":
 
 
     """
-    rosrun 
+
+    🌟 category :
+    1. Take the tiger out of the red bowl and put it in the grey bowl
+    2. Sweep the green cloth to the left side of the table.
+    3. Pick up the blue cup and put it into the brown cup.
+    4. Put the ranch bottle into the pot.
+
+    🌟 execute : 
+    1. listen_to_pose
+    2. move_to_pose
+    3. collect_to_pose
     
     """
