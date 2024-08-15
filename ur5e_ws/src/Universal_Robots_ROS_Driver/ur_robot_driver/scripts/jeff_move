@@ -148,8 +148,8 @@ class TrajectoryClient:
         velocity_list.append([-0.2, 0, 0, 0, 0, 0])
         velocity_list.append([0, 0, 0, 0, 0, 0])
 
-        duration_list = [3.0, 7.0, 10.0]
-
+        duration_list = [10.0, 20.0, 30.0]
+        
         # append the joint-based trajectory 
         for i, position in enumerate(position_list):
             point = JointTrajectoryPoint()
@@ -195,7 +195,7 @@ class TrajectoryClient:
 
         # the following list are arbitrary positions | Change to your own needs if desired
         # Position([3]) + Quaternion([4])
-
+        
         pose_list = [
             geometry_msgs.Pose(
                 geometry_msgs.Vector3(0.4, -0.1, 0.4), geometry_msgs.Quaternion(0, 0, 0, 1)
@@ -213,7 +213,7 @@ class TrajectoryClient:
                 geometry_msgs.Vector3(0.4, -0.1, 0.4), geometry_msgs.Quaternion(0, 0, 0, 1)
             ),
         ]
-        duration_list = [20.0, 10.0, 10.0, 10.0, 10.0]
+        duration_list = [10.0, 20.0, 30.0, 40.0, 50.0]
         
         # append the cartesian-based trajectory 
         for i, pose in enumerate(pose_list):

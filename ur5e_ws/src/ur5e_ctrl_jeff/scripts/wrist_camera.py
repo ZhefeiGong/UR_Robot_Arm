@@ -8,6 +8,55 @@ import time
 import ur5e_ctrl_jeff.msg
 from utils import capture_image
 
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+
+def image_publisher(camera_id=0):
+    """
+
+    """
+
+    rospy.init_node('wrist_image_publisher_node', anonymous=True)
+    image_pub = rospy.Publisher('camera/wrist_image', Image, queue_size=10)
+    bridge = CvBridge()
+    
+    cap = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
+    cap.set(cv2.CAP_PROP_FPS, 30.0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+
+    if not cap.isOpened():
+        rospy.logerr("Unable to open camera")
+        return
+
+    rate = rospy.Rate(10)  # 10Hz
+
+    while not rospy.is_shutdown():
+        ret, frame = cap.read()
+        if ret:
+            image_message = bridge.cv2_to_imgmsg(frame, encoding="bgr8")
+            image_pub.publish(image_message)
+
+        rate.sleep()
+
+    cap.release()
+
+class WristSubscriber:
+    def __init__(self):
+        self.bridge = CvBridge()
+        self.current_frame = None
+        rospy.Subscriber('camera/wrist_image', Image, self.image_callback)
+
+    def image_callback(self, msg):
+        try:
+            self.current_frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        except CvBridgeError as e:
+            rospy.logerr("CvBridge Error: {0}".format(e))
+
+    def get_current_image(self):
+        return self.current_frame
+
 class WristCamera:
     """
     the class for wrist camera | open another thread for picture capturing
@@ -66,7 +115,6 @@ class WristCamera:
         else:
             return False
 
-
 def test():
 
     # Open the default camera (usually the first camera found, index 0)
@@ -108,7 +156,6 @@ def test():
     cap.release()
     cv2.destroyAllWindows()
 
-
 if __name__ == "__main__":
 
     # # capture one image
@@ -121,6 +168,11 @@ if __name__ == "__main__":
     # camera.stop()
     # cv2.destroyAllWindows()
     
-    # 
-    test()
+    # # 
+    # test()
+
+    try:
+        image_publisher()
+    except rospy.ROSInterruptException:
+        pass
 

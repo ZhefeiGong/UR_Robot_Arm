@@ -74,18 +74,29 @@ def ask_confirmation(prompt=""):
 #     print(f"Concatenated image saved to {output_path}")
 
 from PIL import Image, ImageDraw, ImageFont
-def generate_initial_img(image_scene_path, image_wrist_path, img_path_initial, width=1300, height=700, horizonMargin=2, font_size=16):
+def generate_initial_img(image_scene_path, image_wrist_path, img_path_initial, scene_current_image, wrist_current_image, width=1300, height=700, horizonMargin=2, font_size=16, is_path=True):
     """
-
-
+    
     """
 
     # Open images
-    image_scene = Image.open(image_scene_path).resize((640, 480))
-    image_wrist = Image.open(image_wrist_path).resize((640, 480))
+    if is_path:
+        image_scene = Image.open(image_scene_path).resize((640, 360), Image.Resampling.LANCZOS)
+        image_wrist = Image.open(image_wrist_path).resize((640, 360), Image.Resampling.LANCZOS)
+        image_wrist = image_wrist.convert("RGB")
+        r,g,b = image_wrist.split()
+        image_wrist = Image.merge("RGB", (b,g,r))
+    else:
+        image_scene=scene_current_image.resize((640, 360), Image.Resampling.LANCZOS).transpose(Image.ROTATE_180)
+        image_wrist=wrist_current_image.resize((640, 360), Image.Resampling.LANCZOS)
+        image_scene = image_scene.convert("RGB")
+        b,g,r = image_scene.split()
+        image_scene = Image.merge("RGB", (r,g,b))
+    
+    image_wrist = image_wrist.transpose(Image.ROTATE_180)
 
-    image_scene_width, image_scene_height = image_scene.size  # ( 640, 480, 3 )
-    image_wrist_width, image_wrist_height = image_wrist.size  # ( 640, 480, 3 )
+    image_scene_width, image_scene_height = image_scene.size  # ( 640, *, 3 )
+    image_wrist_width, image_wrist_height = image_wrist.size  # ( 640, *, 3 )
 
     # Create a new image with a white background
     new_image = Image.new("RGB", (width, height), "white")
@@ -201,6 +212,8 @@ def action_to_command(action_arrary_quaternion, first_duration=10, duration=2, f
     grip_list = []
     duration_list = []
 
+    time_count = 0
+
     for idx, action in enumerate(action_arrary_quaternion):
         
         # (x,y,z) + (x,y,z,w)
@@ -221,10 +234,11 @@ def action_to_command(action_arrary_quaternion, first_duration=10, duration=2, f
         
         # duration
         if idx == 0:
-            duration_list.append(first_duration)
+            time_count += first_duration
         else:
-            duration_list.append(duration)
-
+            time_count += duration
+        duration_list.append(time_count)
+    
     return pose_list, grip_list, duration_list
 
 
@@ -276,8 +290,7 @@ if __name__ == "__main__":
     # # img_path_initial = "/Users/zhefeigong/Downloads/workspace/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init_.jpg"
     
     # concateImage(img_path_scene, img_path_wrist, img_path_initial)
-
-
+    
     quaternions = np.array([0.11625579, 0.94370034, -0.30423459, 0.05792736])
     rotation = R.from_quat(quaternions) # [x,y,z,w]
     euler = rotation.as_euler("xyz", degrees=False)

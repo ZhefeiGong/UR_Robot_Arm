@@ -312,7 +312,7 @@ class MotionCommander:
         # send the goals and wait for answer
         trajectory_client.send_goal(goal)
         trajectory_client.wait_for_result()
-
+        
         # get the results from server
         result = trajectory_client.get_result()
         rospy.loginfo("[INFO] Trajectory execution finished in state {}".format(result.error_code))
