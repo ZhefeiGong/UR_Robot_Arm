@@ -408,6 +408,8 @@ class MotionCommander:
         # run the trajectory for each time
         for mut_idx,(poses, durations) in enumerate(zip(pose_list_split, duration_list_split)):
             
+            print("[RUNNING]", mut_idx)
+
             # initial goals
             goal = FollowCartesianTrajectoryGoal()
             for mv_idx, (pose, duration) in enumerate(zip(poses, durations)):
@@ -605,32 +607,46 @@ if __name__ == "__main__":
 
     """
     position: 
-        x: -0.5140640000000001
-        y: -0.6890584615384615
-        z: 0.5902399999999999
-        orientation: 
-        x: -0.41373427121606693
-        y: -0.8780025890263642
-        z: 0.11449318779703765
-        w: 0.21172320711812312
+    [-0.56527922 -0.22186054  0.27344033  0.59709341  0.76911696  0.22700958 0.02012982  1.        ]
+    [-0.39452526 -0.43921204  0.43423824 -0.44198287 -0.88596373 -0.01223736 0.13989163  1.        ]
+    [-0.28081507 -0.53617997  0.34731568 -0.33019026 -0.93902052 -0.09400098 0.0194595   0.        ]
     """
-    
-    # pose_list = [
-    #     geometry_msgs.Pose(
-    #         geometry_msgs.Vector3(x=-0.2862943306897481, y=-0.6872491842681708, z=0.5960513700027534), 
-    #         geometry_msgs.Quaternion(x=-0.4125877485290233, y=-0.8766820482510818, z=0.12091663142395062, w=0.2158219272528257)
-    #     ),
-    # ]
-    # duration_list = [12.0]
-    # grip_list = [0]
-    # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
-    
-    print(client.get_arm_cartesian_state())
-    print(client.get_state())
-    
+    pose_list = [
+        # geometry_msgs.Pose(
+        #     geometry_msgs.Vector3(x=-0.56527922, y=-0.22186054 , z=0.27344033), 
+        #     geometry_msgs.Quaternion(x=0.59709341, y=0.76911696, z=0.22700958, w=0.02012982)
+        # ),
+        # geometry_msgs.Pose(
+        #     geometry_msgs.Vector3(x=-0.39452526, y=-0.43921204 , z=0.43423824), 
+        #     geometry_msgs.Quaternion(x=-0.44198287, y=-0.88596373, z=-0.01223736, w=0.13989163)
+        # ),
+        # geometry_msgs.Pose(
+        #     geometry_msgs.Vector3(x=-0.28081507, y=-0.53617997 , z=0.34731568), 
+        #     geometry_msgs.Quaternion(x=-0.33019026, y=-0.93902052, z=-0.09400098, w=0.0194595)
+        # ),
+        geometry_msgs.Pose(
+            geometry_msgs.Vector3(x=-0.02341261, y=-0.34111358, z=0.41555742), 
+            geometry_msgs.Quaternion(x=-0.39346165, y=-0.91257039, z=0.10261079, w=0.04329246)
+        ),
+    ]
+
+    # duration_list = [15.0, 25.0, 35.0]
+    # grip_list = [1,1,0]
+
+    duration_list = [20.0]
+    grip_list = [0]
+
+    client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+
+    from utils import quaternion_to_euler
+    state = client.get_state()
+    state_euler = quaternion_to_euler(state)
+    print(state)
+    print(state_euler)
+
+
     # raise ValueError(
     #     "I only understand types 'joint_based' and 'cartesian', but got '{}'".format(
     #         trajectory_type
     #     )
     # )
-

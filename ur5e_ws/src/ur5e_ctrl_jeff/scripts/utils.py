@@ -244,37 +244,30 @@ def action_to_command(action_arrary_quaternion, first_duration=10, duration=2, f
 
 def cartesian_linear_mapping(robot_state, cart, cart_m):
     """
-    [-0.1267, -0.6590, 0.8533]
-    [-0.0576, -0.8014, 0.3856]
-    [-0.3534, -0.8053, 0.4231]
-    [-0.2666, -0.5990, 0.8522]
-    [-0.5814, -0.1503, 0.4008]
-    [-0.4122, -0.0547, 0.9237]
-    [-0.6779, -0.2752, 0.7062]
-    [-0.7880, -0.3399, 0.3901]   
-
+        [ cart ] --> [ cart_m ]
     * : [mim, max] --> [min, max]
     x : [0.18, 0.68]  --> [-0.80, 0.00]
     y : [-0.27, 0.38] --> [-0.80, 0.00]
     z : [-0.20, 0.20] --> [0.35, 0.95]
-
     rx : [-1.0,1.0] --> no need (pi)
     ry : [-0.51,0.40] --> no need
     rz : [0.77,2.60] --> no need
 
-    @robot_state : [x,y,z,rx,ry,rz] | 2-dimensional
+    @robot_state : [[x,y,z,rx,ry,rz]] | 2-dimensional
     @formula : y=ax+b
-
+    
     """
-
+    
+    dim = len(cart)
     min_sg = 0
     max_sg = 1
 
-    a = (cart_m[:,max_sg]-cart_m[:,min_sg]) / ((cart[:,max_sg]-cart[:,min_sg])) # [7,]
-    b = cart_m[:,min_sg] - a * cart[:,min_sg] # [7,]
+    a = (cart_m[:,max_sg]-cart_m[:,min_sg]) / ((cart[:,max_sg]-cart[:,min_sg]))     # [6,]
+    b = cart_m[:,min_sg] - a * cart[:,min_sg]                                       # [6,]
+    a = a.reshape((1,dim))                                                          # [1,6]
+    b = b.reshape((1,dim))                                                          # [1,6]
 
-    for i in range(len(robot_state)):
-      robot_state[i][:6] = a*robot_state[i][:6] +b
+    robot_state[:,:6] = a*robot_state[:,:6] + b                                     # [n,6] = [1,6] * [n,6] + [1,6]
 
     return robot_state
 
