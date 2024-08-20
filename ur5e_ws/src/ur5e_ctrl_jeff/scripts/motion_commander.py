@@ -405,7 +405,11 @@ class MotionCommander:
         # print(pose_list_split)
         # print(duration_list_split)
 
-        # run the trajectory for each time
+        # curtail the duplicate durations
+        for idx in range(1, len(duration_list_split)):
+            duration_list_split[-idx] = [ x - duration_list_split[-idx-1][-1] for x in duration_list_split[-idx] ]
+        
+        # run the trajectory for each time       
         for mut_idx,(poses, durations) in enumerate(zip(pose_list_split, duration_list_split)):
             
             print("[RUNNING]", mut_idx)

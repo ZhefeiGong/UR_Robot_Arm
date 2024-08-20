@@ -68,9 +68,10 @@ class SceneCamera:
         self.cap = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
 
         self.cap.set(cv2.CAP_PROP_FPS, 30.0)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+        self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
 
         self.frame = None
         self.running = False
@@ -133,13 +134,15 @@ def test():
     print(f"Actual resolution: {int(actual_width)}x{int(actual_height)}")
 
     # Set desired resolution (e.g., 1280x720)
-    desired_width = 1280
-    desired_height = 720
+    desired_width = 640 # 1280
+    desired_height = 480 # 720
     cap.set(cv2.CAP_PROP_FPS, 30.0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     print(f"Desired resolution: {int(desired_width)}x{int(desired_height)}")
+
+    ### Set the exposure
     cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
 
     time.sleep(2)
@@ -175,11 +178,11 @@ if __name__ == "__main__":
     # camera.stop()
     # cv2.destroyAllWindows()
 
-    # # test the camera
-    # test()
+    # test the camera
+    test()
 
-    try:
-        image_publisher()
-    except rospy.ROSInterruptException:
-        pass
+    # try:
+    #     image_publisher()
+    # except rospy.ROSInterruptException:
+    #     pass
 

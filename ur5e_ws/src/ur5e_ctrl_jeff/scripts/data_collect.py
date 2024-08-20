@@ -168,14 +168,14 @@ def move_to_pose(args):
     motion_client = MotionCommander()
     rospy.loginfo(" ---- begin ---- ")
 
-    pose_list, grip_list, duration_list = action_to_command(traj_arrary, first_duration=10, duration=10)
+    pose_list, grip_list, duration_list = action_to_command(traj_arrary, first_duration=8, duration=8)
+
     rospy.loginfo(pose_list)
     rospy.loginfo(grip_list)
     rospy.loginfo(duration_list)
 
     ask_confirmation(prompt="we'll execute the trajectory...")
-    for i in range(len(traj_arrary)):
-        motion_client.execute_arm_gripper_trajectory([pose_list[i]], [grip_list[i]], [duration_list[i]])
+    motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
 
 
 if __name__ == "__main__":
@@ -183,16 +183,16 @@ if __name__ == "__main__":
 
     ###
     args = {
-        'collect_id': 30,
+        'collect_id': 40,
         'is_gripper_open': True,
         'save_traj_path': "/home/robot/DATASET/Bottle/pose.csv",
         'task' : "Put the ranch bottle into the pot",
         
         # 'command': "listen" , 
         
-        # 'command': "move" , 
-
-        'command': "collect" ,
+        'command': "move" , 
+        
+        # 'command': "collect" ,
         
     }
 
