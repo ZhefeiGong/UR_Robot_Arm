@@ -605,29 +605,26 @@ if __name__ == "__main__":
     # POSITION + GRIPPER
     # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
 
-    """
-    position: 
-    [-0.56527922 -0.22186054  0.27344033  0.59709341  0.76911696  0.22700958 0.02012982  1.        ]
-    [-0.39452526 -0.43921204  0.43423824 -0.44198287 -0.88596373 -0.01223736 0.13989163  1.        ]
-    [-0.28081507 -0.53617997  0.34731568 -0.33019026 -0.93902052 -0.09400098 0.0194595   0.        ]
-    """
     pose_list = [
+
+        # ### 🌟 tiger-4
         # geometry_msgs.Pose(
-        #     geometry_msgs.Vector3(x=-0.56527922, y=-0.22186054 , z=0.27344033), 
-        #     geometry_msgs.Quaternion(x=0.59709341, y=0.76911696, z=0.22700958, w=0.02012982)
+        #     geometry_msgs.Vector3(x=-0.02341261, y=-0.34111358, z=0.41555742), 
+        #     geometry_msgs.Quaternion(x=-0.39346165, y=-0.91257039, z=0.10261079, w=0.04329246)
         # ),
+
+        ### 🌟 bottle-6
+
         # geometry_msgs.Pose(
-        #     geometry_msgs.Vector3(x=-0.39452526, y=-0.43921204 , z=0.43423824), 
-        #     geometry_msgs.Quaternion(x=-0.44198287, y=-0.88596373, z=-0.01223736, w=0.13989163)
+        #     geometry_msgs.Vector3(x=-0.38073135, y=-0.43798405 , z=0.39272952), 
+        #     geometry_msgs.Quaternion(x=0.39036752, y=0.9064039, z=-0.1595691, w=0.02414259)
         # ),
-        # geometry_msgs.Pose(
-        #     geometry_msgs.Vector3(x=-0.28081507, y=-0.53617997 , z=0.34731568), 
-        #     geometry_msgs.Quaternion(x=-0.33019026, y=-0.93902052, z=-0.09400098, w=0.0194595)
-        # ),
+        
         geometry_msgs.Pose(
-            geometry_msgs.Vector3(x=-0.02341261, y=-0.34111358, z=0.41555742), 
-            geometry_msgs.Quaternion(x=-0.39346165, y=-0.91257039, z=0.10261079, w=0.04329246)
+            geometry_msgs.Vector3(x=-0.4398046, y=-0.11719886 , z=0.30536759 ), 
+            geometry_msgs.Quaternion(x=-0.47975619, y=-0.8670687, z=0.13370965, w=0.012149)
         ),
+
     ]
 
     # duration_list = [15.0, 25.0, 35.0]
@@ -635,7 +632,7 @@ if __name__ == "__main__":
 
     duration_list = [20.0]
     grip_list = [0]
-
+    
     client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
 
     from utils import quaternion_to_euler

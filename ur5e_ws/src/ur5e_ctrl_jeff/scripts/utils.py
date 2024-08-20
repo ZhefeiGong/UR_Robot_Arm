@@ -258,18 +258,39 @@ def cartesian_linear_mapping(robot_state, cart, cart_m):
     
     """
     
+    # init
+    state = robot_state.copy()
     dim = len(cart)
     min_sg = 0
     max_sg = 1
 
+    # calculate
     a = (cart_m[:,max_sg]-cart_m[:,min_sg]) / ((cart[:,max_sg]-cart[:,min_sg]))     # [6,]
     b = cart_m[:,min_sg] - a * cart[:,min_sg]                                       # [6,]
     a = a.reshape((1,dim))                                                          # [1,6]
     b = b.reshape((1,dim))                                                          # [1,6]
 
-    robot_state[:,:6] = a*robot_state[:,:6] + b                                     # [n,6] = [1,6] * [n,6] + [1,6]
+    # transform
+    state[:,:6] = a*state[:,:6] + b                                     # [n,6] = [1,6] * [n,6] + [1,6]
 
-    return robot_state
+    return state
+
+def curtail_duplicate_action(action_arrary):
+    """
+    cut off the same action compared with the former one
+
+    @action_arrary has shape : [n,7]
+    
+    """
+
+    cur_action_arrary = [action_arrary[0]]
+
+    for idx in range(1, action_arrary.shape[0]):
+        if not np.array_equal(action_arrary[idx], action_arrary[idx-1]):
+            cur_action_arrary.append(action_arrary[idx])
+    
+    return np.array(cur_action_arrary)
+
 
 
 if __name__ == "__main__":

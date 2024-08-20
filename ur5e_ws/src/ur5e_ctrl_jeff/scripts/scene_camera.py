@@ -25,7 +25,8 @@ def image_publisher(camera_id=2):
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+    
     if not cap.isOpened():
         rospy.logerr("Unable to open camera")
         return
@@ -139,6 +140,7 @@ def test():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     print(f"Desired resolution: {int(desired_width)}x{int(desired_height)}")
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
 
     time.sleep(2)
 
