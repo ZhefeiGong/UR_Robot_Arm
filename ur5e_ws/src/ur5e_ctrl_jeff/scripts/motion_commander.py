@@ -609,35 +609,25 @@ if __name__ == "__main__":
     # POSITION + GRIPPER
     # the following list are arbitrary positions | Change to your own needs if desired | Position([3]) + Quaternion([4])
 
-    pose_list = [
-
-        # ### 🌟 tiger-4
-        # geometry_msgs.Pose(
-        #     geometry_msgs.Vector3(x=-0.02341261, y=-0.34111358, z=0.41555742), 
-        #     geometry_msgs.Quaternion(x=-0.39346165, y=-0.91257039, z=0.10261079, w=0.04329246)
-        # ),
-
-        ### 🌟 bottle-6
-
-        # geometry_msgs.Pose(
-        #     geometry_msgs.Vector3(x=-0.38073135, y=-0.43798405 , z=0.39272952), 
-        #     geometry_msgs.Quaternion(x=0.39036752, y=0.9064039, z=-0.1595691, w=0.02414259)
-        # ),
-        
-        geometry_msgs.Pose(
-            geometry_msgs.Vector3(x=-0.4398046, y=-0.11719886 , z=0.30536759 ), 
-            geometry_msgs.Quaternion(x=-0.47975619, y=-0.8670687, z=0.13370965, w=0.012149)
-        ),
-
-    ]
-
-    # duration_list = [15.0, 25.0, 35.0]
-    # grip_list = [1,1,0]
-
-    duration_list = [20.0]
-    grip_list = [0]
-    
-    client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
+    # pose_list = [
+    #     # ### 🌟 tiger-4
+    #     # geometry_msgs.Pose(
+    #     #     geometry_msgs.Vector3(x=-0.02341261, y=-0.34111358, z=0.41555742), 
+    #     #     geometry_msgs.Quaternion(x=-0.39346165, y=-0.91257039, z=0.10261079, w=0.04329246)
+    #     # ),
+    #     ### 🌟 bottle-6
+    #     # geometry_msgs.Pose(
+    #     #     geometry_msgs.Vector3(x=-0.38073135, y=-0.43798405 , z=0.39272952), 
+    #     #     geometry_msgs.Quaternion(x=0.39036752, y=0.9064039, z=-0.1595691, w=0.02414259)
+    #     # ),
+    #     geometry_msgs.Pose(
+    #         geometry_msgs.Vector3(x=-0.4398046, y=-0.11719886 , z=0.30536759 ), 
+    #         geometry_msgs.Quaternion(x=-0.47975619, y=-0.8670687, z=0.13370965, w=0.012149)
+    #     ),
+    # ]
+    # duration_list = [20.0]
+    # grip_list = [0]
+    # client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
 
     from utils import quaternion_to_euler
     state = client.get_state()
@@ -645,7 +635,7 @@ if __name__ == "__main__":
     print(state)
     print(state_euler)
 
-
+    
     # raise ValueError(
     #     "I only understand types 'joint_based' and 'cartesian', but got '{}'".format(
     #         trajectory_type
