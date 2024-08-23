@@ -181,7 +181,6 @@ if __name__ == "__main__":
     # camera.stop()
     # cv2.destroyAllWindows()
 
-
     # test the camera
     test()
     

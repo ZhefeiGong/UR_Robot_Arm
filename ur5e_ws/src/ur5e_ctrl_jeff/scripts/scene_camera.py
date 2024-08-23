@@ -73,6 +73,11 @@ class SceneCamera:
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
 
+        exposure = -5.5
+        self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
+        self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0)
+        self.cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+
         self.frame = None
         self.running = False
         self.lock = threading.Lock()
@@ -143,7 +148,14 @@ def test():
     print(f"Desired resolution: {int(desired_width)}x{int(desired_height)}")
 
     ### Set the exposure
+
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
+    
+    exposure = -5.5
     cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0)
+    cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+    print(f"Desired exposure: {cap.get(cv2.CAP_PROP_EXPOSURE)}")
 
     time.sleep(2)
 

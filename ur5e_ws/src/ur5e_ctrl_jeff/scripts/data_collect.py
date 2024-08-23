@@ -15,6 +15,14 @@ from scene_camera import SceneCamera
 from utils import capture_image, action_to_command, ask_confirmation
 from motion_commander import MotionCommander
 
+CLASS = "Cup"
+SLEEP = 0.5
+ID = 40
+COMMAND = "listen"
+# "move"
+# "collect"
+
+
 class NumpyEncoder(json.JSONEncoder):
     """
     
@@ -58,7 +66,7 @@ def collect_to_pose(args):
 
     rospy.init_node("collecting")
 
-    time_sleep = 0.5
+    time_sleep = SLEEP
 
     camera_w = WristCamera()
     camera_s = SceneCamera()
@@ -67,7 +75,7 @@ def collect_to_pose(args):
     camera_s.start()
     motion_client = MotionCommander()
 
-    root_path = "/home/robot/DATASET/Bottle/"+"traj"+str(args['collect_id'])+"/"
+    root_path = f"/home/robot/DATASET/{CLASS}/"+"traj"+str(args['collect_id'])+"/"
     root_img_path_scene = root_path + "image/scene/"
     root_img_path_wrist = root_path + "image/wrist/"
     ensure_folder_exists(root_path)
@@ -180,22 +188,15 @@ def move_to_pose(args):
 
 if __name__ == "__main__":
 
-
     ###
     args = {
-        'collect_id': 40,
+        'collect_id': ID,
         'is_gripper_open': True,
-        'save_traj_path': "/home/robot/DATASET/Bottle/pose.csv",
-        'task' : "Put the ranch bottle into the pot",
-        
-        # 'command': "listen" , 
-        
-        'command': "move" , 
-        
-        # 'command': "collect" ,
-        
+        'save_traj_path': f"/home/robot/DATASET/{CLASS}/pose.csv",
+        'task' : "Pick up the blue cup and put it into the brown cup", 
+        'command': COMMAND , 
     }
-
+    
     ###
     if args['command'] == "collect":
         collect_to_pose(args)
