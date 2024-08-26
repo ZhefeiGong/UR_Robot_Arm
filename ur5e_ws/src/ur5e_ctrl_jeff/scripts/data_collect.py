@@ -15,12 +15,25 @@ from scene_camera import SceneCamera
 from utils import capture_image, action_to_command, ask_confirmation
 from motion_commander import MotionCommander
 
-CLASS = "Cup"
+CLASS = "Cloth"
 SLEEP = 0.5
-ID = 40
-COMMAND = "listen"
-# "move"
-# "collect"
+ID = 54
+TASK = "Sweep the green cloth to the left side of the table"
+"""
+    🌟 category :
+    1. Take the tiger out of the red bowl and put it in the grey bowl.
+    2. Sweep the green cloth to the left side of the table.
+    3. Pick up the blue cup and put it into the brown cup.
+    4. Put the ranch bottle into the pot.
+"""
+
+COMMAND = "move"
+"""
+    🌟 category :
+    1. listen
+    2. move
+    3. collect
+"""
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -193,7 +206,7 @@ if __name__ == "__main__":
         'collect_id': ID,
         'is_gripper_open': True,
         'save_traj_path': f"/home/robot/DATASET/{CLASS}/pose.csv",
-        'task' : "Pick up the blue cup and put it into the brown cup", 
+        'task' : TASK, 
         'command': COMMAND , 
     }
     
@@ -210,12 +223,6 @@ if __name__ == "__main__":
 
     """
 
-    🌟 category :
-    1. Take the tiger out of the red bowl and put it in the grey bowl.
-    2. Sweep the green cloth to the left side of the table.
-    3. Pick up the blue cup and put it into the brown cup.
-    4. Put the ranch bottle into the pot.
-    
     🌟 execute : 
     1. listen_to_pose
     2. move_to_pose

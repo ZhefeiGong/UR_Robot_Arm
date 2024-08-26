@@ -64,7 +64,7 @@ class SceneCamera:
 
     """
     
-    def __init__(self, camera_id=2):
+    def __init__(self, camera_id=0):
         self.cap = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
 
         self.cap.set(cv2.CAP_PROP_FPS, 30.0)
@@ -127,7 +127,7 @@ class SceneCamera:
 def test():
 
     # Open the default camera (usually the first camera found, index 0)
-    cap = cv2.VideoCapture(2, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
     if not cap.isOpened():
         print("Error: Could not open camera.")
