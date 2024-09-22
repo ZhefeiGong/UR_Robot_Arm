@@ -25,7 +25,15 @@ def image_publisher(camera_id=2):
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+
+    ### EXPOSURE
+    # auto
     cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+    # # manual
+    # exposure = -5.5
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0)
+    # cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
     
     if not cap.isOpened():
         rospy.logerr("Unable to open camera")
@@ -73,10 +81,14 @@ class SceneCamera:
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
 
-        exposure = -5.5
-        self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
-        self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0)
-        self.cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+        ### EXPOSURE
+        # auto
+        self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+        # # manual
+        # exposure = -5.5
+        # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
+        # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0)
+        # cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
 
         self.frame = None
         self.running = False
@@ -146,16 +158,17 @@ def test():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     print(f"Desired resolution: {int(desired_width)}x{int(desired_height)}")
+    print(f"Current resolution: {int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}")
 
-    ### Set the exposure
-
+    ### EXPOSURE
+    # auto
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+    # # manual
+    # exposure = -5.5
     # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
-    
-    exposure = -5.5
-    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
-    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0)
-    cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
-    print(f"Desired exposure: {cap.get(cv2.CAP_PROP_EXPOSURE)}")
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0)
+    # cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+    # print(f"Desired exposure: {cap.get(cv2.CAP_PROP_EXPOSURE)}")
 
     time.sleep(2)
 

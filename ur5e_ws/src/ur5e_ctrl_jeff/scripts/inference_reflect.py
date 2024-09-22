@@ -12,8 +12,8 @@ import motion_commander
 from motion_commander import MotionCommander
 from PIL import Image
 
-from vla_client import VLAClient
-from vla_client import load_image, get_completeTraj, get_trajNdArray
+from ur5e_ws.src.ur5e_ctrl_jeff.scripts.vla_client_reflect import VLAClient
+from ur5e_ws.src.ur5e_ctrl_jeff.scripts.vla_client_reflect import load_image, get_completeTraj, get_trajNdArray
 
 from utils import capture_image, ask_confirmation, generate_initial_img
 from utils import euler_to_quaternion, quaternion_to_euler, format_state_array, action_to_command
@@ -72,7 +72,7 @@ def run():
     
     ### run
     while True:
-        # get the initial image
+        ### get the initial image
         # ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
         img_path_scene = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/scene/test.jpg"
         img_path_wrist = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/wrist/test.jpg"
@@ -86,7 +86,7 @@ def run():
                                 wrist_current_image=wrist_current_image,
                                 is_path=False)
 
-        # get the initial state
+        ### get the initial state
         # ask_confirmation(prompt="we'll recieve the state from ur5e...")
         robot_state = motion_client.get_state()
         print('[INFO] robot state | quat : \n', robot_state)
@@ -97,7 +97,7 @@ def run():
         robot_state_euler_mapped_str= format_state_array(robot_state_euler_mapped)
         print('[INFO] robot state | euler | mapped | str: \n', robot_state_euler_mapped_str)
         
-        # get the actions
+        ### get the actions
         # ask_confirmation(prompt="we'll recieve the action prediction from VLA...")
         initialImg = load_image(img_path_initial)
         infer_param = {
@@ -111,7 +111,7 @@ def run():
             "maximumLength" : 1024,
             "robot_state" : robot_state_euler_mapped_str,
         }
-
+        
         print('[INFO] BEGIN TO INFER ... ')
         response = vla_client.infer_traj(infer_param)
         action_arrary = get_trajNdArray(get_completeTraj(response['traj']))
@@ -129,7 +129,7 @@ def run():
         # print(pose_list)
         # print(grip_list)
         # print(duration_list)
-
+        
         # ask_confirmation(prompt="we'll execute the trajectory...")
         motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list, is_ask_conf=False)
         

@@ -40,43 +40,44 @@ rosrun ur_robot_driver tool_communication
 ###### Gripper ######
 sudo usermod -a -G dialout $USER
 dmesg | grep tty
-
 rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
 rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
 rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
 roslaunch robotiq_2f_85_gripper_visualization view_robotiq_2f_85.launch
 
-###### WORK FLOW ######
+###### Env Init ######
 cd UR_Robot_Arm/ur5e_ws/
 source /opt/ros/noetic/setup.bash
 source devel/setup.bash
 
-roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
-# roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.2.7 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
+###### Launch ######
+# roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.2.7 kinematics_config:=/home/robot/UR_Robot_Arm/ur5e_ws/my_robot_calibration.yaml
 roslaunch ur_robot_driver example_rviz.launch
 
+###### Gripper Init ######
 sudo usermod -a -G dialout $USER
 dmesg | grep tty
 rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
+rosrun robotiq_2f_gripper_control jeff_gripper.py
+rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
+rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
 
+###### Test ######
 rosrun ur_robot_driver jeff_move
 rosrun ur_robot_driver jeff_listen
 
-rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
-rosrun robotiq_2f_gripper_control jeff_gripper.py
-rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
-
+###### Listener ######
 rosrun ur5e_ctrl_jeff cartesian_listener.py
 rosrun ur5e_ctrl_jeff gripper_listener.py
-
 rosrun ur5e_ctrl_jeff motion_commander.py
 
+###### Camera ######
 rosrun ur5e_ctrl_jeff wrist_camera.py
 rosrun ur5e_ctrl_jeff scene_camera.py
-
 # rosrun ur5e_ctrl_jeff realsense_camera.py
-# rosrun ur5e_ctrl_jeff vla_client.py
 
+###### Infer and Collect ######
 rosrun ur5e_ctrl_jeff inference.py
 rosrun ur5e_ctrl_jeff data_collect.py
 
