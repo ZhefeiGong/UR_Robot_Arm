@@ -20,13 +20,13 @@ class CartesianStateListener():
         
         self.is_verbose = verbose
         self.cartesian_pose = geometry_msgs.Pose()
-
+        
         # rospy.init_node('tf_listener')
         rospy.Subscriber("tf", TFMessage, self.tf_callback)
         
     def tf_callback(self, msg):
         """Initialize the callback function of the subscriber"""
-    
+
         num_tf_end_effector = 1
         
         if len(msg.transforms) == num_tf_end_effector:

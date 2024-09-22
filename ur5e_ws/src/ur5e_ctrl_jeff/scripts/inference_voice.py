@@ -8,6 +8,7 @@ import geometry_msgs.msg as geometry_msgs
 import ur5e_ctrl_jeff.msg
 import motion_commander
 from motion_commander import MotionCommander
+from joint_listener import JointStateListener
 from PIL import Image
 
 from vla_client_voice import VLAClient
@@ -48,10 +49,11 @@ def preprocess_image(scene_Image, wrist_Image):
     wrist_Image = wrist_Image.convert("RGB")
     b,g,r = wrist_Image.split()
     wrist_Image = Image.merge("RGB", (r,g,b))
+    wrist_Image = wrist_Image.transpose(Image.ROTATE_180)
 
     return scene_Image, wrist_Image
 
-def preprocess_state(joints,poses, action_blocked=0.0):
+def preprocess_state(joints, poses, action_blocked=0.0):
     """
     @func : 
     """
@@ -63,6 +65,21 @@ def preprocess_state(joints,poses, action_blocked=0.0):
     robot_obs.append(action_blocked) # x y z qx qy qz qw gripper_is_closed
     return robot_obs
 
+def postprocess_action(robot_state, actions):
+    """
+    @func : 
+    """
+    action_dim = 7
+    action_num = len(actions)//action_dim
+    robot_state = robot_state[0]
+    robot_actions = []
+    for idx_num in range(action_num):
+        for idx_dim in range(action_dim):
+            robot_state[idx_dim] += actions[idx_num*action_dim + idx_dim]
+        robot_actions.append(robot_state)
+    robot_actions = np.stack(robot_actions, axis=0)
+    return robot_actions
+
 def run():
     """
     @func : run the whole process
@@ -71,6 +88,7 @@ def run():
     ### initialization
     rospy.init_node("inference")
     motion_client = MotionCommander()
+    joint_subscriber = JointStateListener()
     scene_image_subscriber = SceneSubscriber()
     wrist_image_subscriber = WristSubscriber()
 
@@ -79,7 +97,7 @@ def run():
     vla_client = VLAClient(host="192.168.2.7", port=5050)
 
     ### 
-    goal = "pick up a bottle for me"
+    goal = "Take the tiger out of the red bowl and put it in the grey bowl"
     scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/scene.jpg"
     wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/wrist.jpg"
 
@@ -96,24 +114,30 @@ def run():
 
         ### get the robot state
         ask_confirmation(prompt="we'll build the current state of the robot...")
-        robot_state = motion_client.get_state()
+        robot_state = motion_client.get_state() # [1,7]
+        robot_state_euler = quaternion_to_euler(robot_state) # [1,6]
         print('[INFO] robot state | quat : \n', robot_state)
+        print('[INFO] robot state | euler : \n', robot_state_euler)
+        robot_joint = np.array([joint_subscriber.get_joint_states('position')]) # [1,6]
+        print('[INFO] robot joint : \n', robot_joint)
         robot_state = list(robot_state[0])
-        robot_joint = [0,0,0,0,0,0]
+        robot_joint = list(robot_joint[0])
         robot_obs = preprocess_state(joints=robot_joint,poses=robot_state)
         print('[INFO] robot obs : \n', robot_obs)
 
         ### get the actions
         ask_confirmation(prompt="we'll recieve the state from ur5e...")
         actions = vla_client.predict_traj(goal=goal,robot_obs=robot_obs,scene_pth=scene_pth,wrist_pth=wrist_pth)
-        print('[INFO] robot action | len : \n', len(actions))
-        print('[INFO] robot action | euler : \n', actions)
-        # actions = curtail_duplicate_action(actions)
-        # print('[INFO] robot action | euler | curtailed : \n', actions)
+        print('[INFO] robot action | raw : \n', actions)
+        robot_actions = postprocess_action(robot_state_euler, actions)
+        print('[INFO] robot action | len : \n', len(robot_actions))
+        print('[INFO] robot action | euler : \n', robot_actions)
+        robot_actions = curtail_duplicate_action(robot_actions)
+        print('[INFO] robot action | euler | curtailed : \n', robot_actions)
 
-        ### get the command         
+        ### get the command
         ask_confirmation(prompt="we'll converse the instruction...")
-        action_arrary_quaternion = euler_to_quaternion(actions)
+        action_arrary_quaternion = euler_to_quaternion(robot_actions)
         pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=5, duration=3)
         print('[INFO] robot action | pose : \n',pose_list)
         print('[INFO] robot action | gripper : \n',grip_list)
@@ -121,7 +145,6 @@ def run():
         
         ask_confirmation(prompt="we'll execute the trajectory...")
         motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list, is_ask_conf=False)
-
 
 if __name__ == "__main__":
     run()

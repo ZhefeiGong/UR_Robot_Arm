@@ -166,6 +166,7 @@ catkin_install_python(PROGRAMS
   scripts/gripper_listener.py
   scripts/inference_reflect.py
   scripts/inference_voice.py
+  scripts/joint_listener.py
   scripts/motion_commander.py
   scripts/realsense_camera.py
   scripts/scene_camera.py

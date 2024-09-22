@@ -71,6 +71,7 @@ rosrun ur_robot_driver jeff_listen
 rosrun ur5e_ctrl_jeff cartesian_listener.py
 rosrun ur5e_ctrl_jeff gripper_listener.py
 rosrun ur5e_ctrl_jeff motion_commander.py
+rosrun ur5e_ctrl_jeff joint_listener.py
 
 ###### Camera ######
 rosrun ur5e_ctrl_jeff wrist_camera.py

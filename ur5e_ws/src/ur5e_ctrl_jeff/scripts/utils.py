@@ -46,7 +46,7 @@ def euler_to_quaternion(action_array):
     @action_array is a 2-d array
 
     """
-
+    
     cartesian = action_array[:, 0:3]
     euler = action_array[:, 3:6]
     gripper = action_array[:, 6:]
