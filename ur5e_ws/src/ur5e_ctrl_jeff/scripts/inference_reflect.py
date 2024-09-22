@@ -12,10 +12,10 @@ import motion_commander
 from motion_commander import MotionCommander
 from PIL import Image
 
-from ur5e_ws.src.ur5e_ctrl_jeff.scripts.vla_client_reflect import VLAClient
-from ur5e_ws.src.ur5e_ctrl_jeff.scripts.vla_client_reflect import load_image, get_completeTraj, get_trajNdArray
+from vla_client_reflect import VLAClient
+from vla_client_reflect import load_image, get_completeTraj, get_trajNdArray
 
-from utils import capture_image, ask_confirmation, generate_initial_img
+from utils import capture_image, ask_confirmation
 from utils import euler_to_quaternion, quaternion_to_euler, format_state_array, action_to_command
 from utils import cartesian_linear_mapping, curtail_duplicate_action
 
@@ -26,9 +26,7 @@ from scene_camera import SceneSubscriber
 if sys.version_info[0] < 3:
     """ 
     compatibility for python2 and python3 
-    
     """
-
     input = raw_input
 
 
@@ -39,7 +37,6 @@ cart_real_all = np.array([[-0.84, -0.27],    # x
                             [0.00, 1.00],    # ry
                             [0.00, 1.00]])   # rz
 
-
 cart_real = np.array([[-0.75, 0.00],    # x [-0.70,0.00]
                         [-0.75, 0.00],  # y [-0.70,0.00]
                         [0.20, 0.70],   # z [0.20,0.68]
@@ -49,10 +46,87 @@ cart_real = np.array([[-0.75, 0.00],    # x [-0.70,0.00]
 
 
 def deal():
+    """
+    @func : visualization
+    """
     robot_state_euler = np.array([] ,float)
     robot_state_euler = cartesian_linear_mapping(robot_state=robot_state_euler, cart=cart_real, cart_m=cart_real_all)
     print(robot_state_euler)
 
+from PIL import Image, ImageDraw, ImageFont
+def generate_initial_img(image_scene_path, image_wrist_path, img_path_initial, scene_current_image, wrist_current_image, width=1300, height=700, horizonMargin=2, font_size=16, is_path=True):
+    """
+    @func : generate the image for reflection model
+    """
+    # Open images
+    if is_path:
+        image_scene = Image.open(image_scene_path).resize((640, 360), Image.Resampling.LANCZOS)
+        image_wrist = Image.open(image_wrist_path).resize((640, 360), Image.Resampling.LANCZOS)
+        image_wrist = image_wrist.convert("RGB")
+        r,g,b = image_wrist.split()
+        image_wrist = Image.merge("RGB", (r,g,b))# (b,g,r))
+    else:
+        image_scene=scene_current_image.resize((640, 360), Image.Resampling.LANCZOS).transpose(Image.ROTATE_180)
+        image_wrist=wrist_current_image.resize((640, 360), Image.Resampling.LANCZOS)
+        image_scene = image_scene.convert("RGB")
+        b,g,r = image_scene.split()
+        image_scene = Image.merge("RGB", (r,g,b))
+    
+    image_wrist = image_wrist.transpose(Image.ROTATE_180)
+
+    image_scene_width, image_scene_height = image_scene.size  # ( 640, *, 3 )
+    image_wrist_width, image_wrist_height = image_wrist.size  # ( 640, *, 3 )
+
+    # Create a new image with a white background
+    new_image = Image.new("RGB", (width, height), "white")
+
+    # Draw a black border
+    draw = ImageDraw.Draw(new_image)
+    border_color = "black"
+    border_width = 2  # Width of the border; you can adjust this
+    
+    # Calculate positions for the images
+    image1_x = border_width + horizonMargin                                # Adjust for border width
+    image1_y = (height - image_scene_height) // 2                          # Vertically centered
+    image2_x = (width - image_wrist_width - border_width - horizonMargin)  # Adjust for border width
+    image2_y = (height - image_wrist_height) // 2                          # Vertically centered
+
+    # Paste the images onto the new image
+    new_image.paste(image_scene, (image1_x, image1_y))
+    new_image.paste(image_wrist, (image2_x, image2_y))
+
+    # Specify the size of your font
+    font_size = font_size  # Change this to your desired font size
+
+    # Load the font (use a .ttf file if you have a specific font in mind)
+    # For a specific font: font = ImageFont.truetype('path/to/font.ttf', font_size)
+    font = ImageFont.load_default().font_variant(size=font_size)
+    # font = ImageFont.truetype(size=font_size)
+    
+    # Center the text horizontally relative to its corresponding image
+    text1 = "global view"
+    text2 = "gripper"
+    text2_2 = "view"
+    
+    text1_width = draw.textlength(text1, font=font)
+    text2_width = draw.textlength(text2, font=font)
+    text2_2_width = draw.textlength(text2_2, font=font)
+
+    text1_x = image1_x + (image_scene_width - text1_width) // 2
+    text2_x = image2_x + (image_wrist_width - text2_width) // 2
+    text2_2_x = image2_x + (image_wrist_width - text2_2_width) // 2
+
+    text1_y = image1_y + image_scene_height
+    text2_y = image2_y + image_wrist_height
+    text2_2_y = image2_y + image_wrist_height + 20
+
+    draw.text((text1_x, text1_y), text1, fill=border_color, font=font)
+    draw.text((text2_x, text2_y), text2, fill=border_color, font=font)
+    draw.text((text2_2_x, text2_2_y), text2_2, fill=border_color, font=font)
+
+    new_image.save(img_path_initial)
+    
+    return True
 
 def run():
     """

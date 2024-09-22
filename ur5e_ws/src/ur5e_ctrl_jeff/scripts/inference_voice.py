@@ -10,9 +10,9 @@ import motion_commander
 from motion_commander import MotionCommander
 from PIL import Image
 
-from ur5e_ws.src.ur5e_ctrl_jeff.scripts.vla_client_voice import VLAClient
+from vla_client_voice import VLAClient
 
-from utils import capture_image, ask_confirmation, generate_initial_img
+from utils import ask_confirmation
 from utils import euler_to_quaternion, quaternion_to_euler, format_state_array, action_to_command
 from utils import cartesian_linear_mapping, curtail_duplicate_action
 
@@ -27,12 +27,41 @@ y <-> [-0.70,0.00]
 z <-> [0.20,0.68]
 """
 
-
 if sys.version_info[0] < 3:
     """ 
     @func : compatibility for python2 and python3 
     """
     input = raw_input
+
+
+def preprocess_image(scene_Image, wrist_Image):
+    """
+    @func : 
+    """
+
+    # scene
+    scene_Image = scene_Image.convert("RGB")
+    b,g,r = scene_Image.split()
+    scene_Image = Image.merge("RGB", (r,g,b))
+    scene_Image = scene_Image.transpose(Image.ROTATE_180)
+    # wrist
+    wrist_Image = wrist_Image.convert("RGB")
+    b,g,r = wrist_Image.split()
+    wrist_Image = Image.merge("RGB", (r,g,b))
+
+    return scene_Image, wrist_Image
+
+def preprocess_state(joints,poses, action_blocked=0.0):
+    """
+    @func : 
+    """
+    robot_obs=[]
+    for joint in joints:
+        robot_obs.append(joint) # joint0 joint1 joint2 joint3 joint4 joint5
+    for pose in poses:
+        robot_obs.append(pose)
+    robot_obs.append(action_blocked) # x y z qx qy qz qw gripper_is_closed
+    return robot_obs
 
 def run():
     """
@@ -47,78 +76,55 @@ def run():
 
     ### get the initial image
     ask_confirmation(prompt="we'll start the client to recieve the msg from VLA")
-    vla_client = VLAClient(host="192.168.2.3", port=5050)
-    
+    vla_client = VLAClient(host="192.168.2.7", port=5050)
+
+    ### 
+    goal = "pick up a bottle for me"
+    scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/scene.jpg"
+    wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/wrist.jpg"
+
     ### run
     while True:
+        
         ### get the initial image
-        # ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
-        img_path_scene = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/scene/test.jpg"
-        img_path_wrist = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/wrist/test.jpg"
-        scene_current_image = Image.fromarray(scene_image_subscriber.get_current_image())
-        wrist_current_image = Image.fromarray(wrist_image_subscriber.get_current_image())
-        img_path_initial = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/init.jpg"
-        generate_initial_img( image_scene_path=img_path_scene, 
-                                image_wrist_path=img_path_wrist, 
-                                img_path_initial=img_path_initial, 
-                                scene_current_image=scene_current_image, 
-                                wrist_current_image=wrist_current_image,
-                                is_path=False)
+        ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
+        scene_cur_image = Image.fromarray(scene_image_subscriber.get_current_image())
+        wrist_cur_image = Image.fromarray(wrist_image_subscriber.get_current_image())
+        scene_cur_image,wrist_cur_image = preprocess_image(scene_cur_image,wrist_cur_image)
+        scene_cur_image.save(scene_pth)
+        wrist_cur_image.save(wrist_pth)
 
-        ### get the initial state
-        # ask_confirmation(prompt="we'll recieve the state from ur5e...")
+        ### get the robot state
+        ask_confirmation(prompt="we'll build the current state of the robot...")
         robot_state = motion_client.get_state()
         print('[INFO] robot state | quat : \n', robot_state)
-        robot_state_euler = quaternion_to_euler(robot_state)
-        print('[INFO] robot state | euler : \n', robot_state_euler)
-        robot_state_euler_mapped = cartesian_linear_mapping(robot_state=robot_state_euler, cart=cart_real, cart_m=cart_real_all)
-        print('[INFO] robot state | euler | mapped: \n', robot_state_euler_mapped)
-        robot_state_euler_mapped_str= format_state_array(robot_state_euler_mapped)
-        print('[INFO] robot state | euler | mapped | str: \n', robot_state_euler_mapped_str)
-        
-        ### get the actions
-        # ask_confirmation(prompt="we'll recieve the action prediction from VLA...")
-        initialImg = load_image(img_path_initial)
-        infer_param = {
-            "initialImg" : initialImg,
-            # "finalImg" : finalImg,
-            "instruction" : "Put the ranch bottle into the pot", # 
-            "template" : "12:36:12", # "class_id : index : num_action"
-            "reward" : 0,
-            "prompt_img" : False,
-            "last_actions" : "",
-            "maximumLength" : 1024,
-            "robot_state" : robot_state_euler_mapped_str,
-        }
-        
-        print('[INFO] BEGIN TO INFER ... ')
-        response = vla_client.infer_traj(infer_param)
-        action_arrary = get_trajNdArray(get_completeTraj(response['traj']))
-        print('[INFO] robot state | euler : \n', action_arrary)
-        action_arrary = cartesian_linear_mapping(robot_state=action_arrary, cart=cart_real_all, cart_m=cart_real)
-        print('[INFO] robot state | euler | mapped : \n', action_arrary)
-        action_arrary = curtail_duplicate_action(action_arrary)
-        print('[INFO] robot state | euler | mapped | before : \n', robot_state_euler)
-        print('[INFO] robot state | euler | mapped | curtailed : \n', action_arrary)
-        
-        # ask_confirmation(prompt="we'll converse the instruction...")
-        action_arrary_quaternion = euler_to_quaternion(action_arrary)
-        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=5, duration=3)
+        robot_state = list(robot_state[0])
+        robot_joint = [0,0,0,0,0,0]
+        robot_obs = preprocess_state(joints=robot_joint,poses=robot_state)
+        print('[INFO] robot obs : \n', robot_obs)
 
-        # print(pose_list)
-        # print(grip_list)
-        # print(duration_list)
+        ### get the actions
+        ask_confirmation(prompt="we'll recieve the state from ur5e...")
+        actions = vla_client.predict_traj(goal=goal,robot_obs=robot_obs,scene_pth=scene_pth,wrist_pth=wrist_pth)
+        print('[INFO] robot action | len : \n', len(actions))
+        print('[INFO] robot action | euler : \n', actions)
+        # actions = curtail_duplicate_action(actions)
+        # print('[INFO] robot action | euler | curtailed : \n', actions)
+
+        ### get the command         
+        ask_confirmation(prompt="we'll converse the instruction...")
+        action_arrary_quaternion = euler_to_quaternion(actions)
+        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=5, duration=3)
+        print('[INFO] robot action | pose : \n',pose_list)
+        print('[INFO] robot action | gripper : \n',grip_list)
+        print('[INFO] robot action | duration : \n',duration_list)
         
-        # ask_confirmation(prompt="we'll execute the trajectory...")
+        ask_confirmation(prompt="we'll execute the trajectory...")
         motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list, is_ask_conf=False)
-        
+
 
 if __name__ == "__main__":
-
     run()
-
-    # deal()
-
 
 """
 🌟 category :

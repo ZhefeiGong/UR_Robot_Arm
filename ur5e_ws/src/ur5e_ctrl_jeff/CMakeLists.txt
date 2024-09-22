@@ -162,15 +162,17 @@ include_directories(
 # in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   scripts/cartesian_listener.py
-  scripts/gripper_listener.py
-  scripts/utils.py
-  scripts/motion_commander.py
-  scripts/vla_client.py
-  scripts/wrist_camera.py
-  scripts/scene_camera.py
-  scripts/realsense_camera.py
   scripts/data_collect.py
-  scripts/inference.py
+  scripts/gripper_listener.py
+  scripts/inference_reflect.py
+  scripts/inference_voice.py
+  scripts/motion_commander.py
+  scripts/realsense_camera.py
+  scripts/scene_camera.py
+  scripts/utils.py
+  scripts/vla_client_reflect.py
+  scripts/vla_client_voice.py
+  scripts/wrist_camera.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

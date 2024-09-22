@@ -24,7 +24,6 @@ class RequestClient:
         """ predict """
         url = f"http://{self.host}:{self.port}/predict"
         response = requests.post(url, files=files, timeout=1000*60)
-        print(response)
         return response.json()
 
 class VLAClient:
@@ -97,12 +96,12 @@ if __name__ == "__main__":
     # action = requests.post(url, files=files)
     # print(action.json())
     # print(action)
-    
+
     goal = "pick up a bottle for me"
     scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_scene.jpg"
     wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_wrist.jpg"
     robot_obs = [1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
-    vla_client = VLAClient(host="172.16.78.10", port=5050)
+    vla_client = VLAClient(host="192.168.2.7", port=5050)
     actions = vla_client.predict_traj(goal=goal,
                                     robot_obs=robot_obs,
                                     scene_pth=scene_pth,

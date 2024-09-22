@@ -45,7 +45,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
                 # Forward the request to the target server
                 response = requests.post(target_url, files=files, timeout=1000*60)
-
+                
                 # Send the response back to the client
                 self.send_response(response.status_code)
                 for key, value in response.headers.items():

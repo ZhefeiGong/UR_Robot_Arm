@@ -11,7 +11,7 @@ from utils import capture_image
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
-def image_publisher(camera_id=0):
+def image_publisher(camera_id=2):
     """
 
     """
@@ -22,8 +22,8 @@ def image_publisher(camera_id=0):
     
     cap = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FPS, 30.0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
 
     ### EXPOSURE
@@ -197,12 +197,12 @@ if __name__ == "__main__":
     #     print("等待相机准备超时")
     # camera.stop()
     # cv2.destroyAllWindows()
-
-    # test the camera
-    test()
     
-    # try:
-    #     image_publisher()
-    # except rospy.ROSInterruptException:
-    #     pass
+    # # test the camera
+    # test()
+    
+    try:
+        image_publisher()
+    except rospy.ROSInterruptException:
+        pass
 

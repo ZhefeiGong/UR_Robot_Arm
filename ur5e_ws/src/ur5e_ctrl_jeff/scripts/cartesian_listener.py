@@ -26,7 +26,7 @@ class CartesianStateListener():
         
     def tf_callback(self, msg):
         """Initialize the callback function of the subscriber"""
-
+    
         num_tf_end_effector = 1
         
         if len(msg.transforms) == num_tf_end_effector:
