@@ -10,7 +10,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
     """
     
     target_host = "172.16.78.10"    # IP address of the remote server
-    target_port = 34389             # Port of the remote server
+    target_port = 39017             # Port of the remote server
 
     def do_POST(self):
         """

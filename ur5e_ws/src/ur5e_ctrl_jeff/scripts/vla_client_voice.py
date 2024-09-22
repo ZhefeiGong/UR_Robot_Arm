@@ -77,35 +77,35 @@ class VLAClient:
 
 if __name__ == "__main__":
     
-    goal = "pick up a bottle for me"
-    path_static = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_scene.jpg"
-    path_gripper = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_wrist.jpg"
-    image_static = Image.open(path_static).convert("RGB")
-    img_static = np.array(image_static)
-    image_gripper = Image.open(path_gripper).convert("RGB")
-    img_gripper = np.array(image_gripper)
-    robot_obs_data = [1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
-    img_static_data = img_static.tobytes()
-    img_gripper_data = img_gripper.tobytes()
-    url = "http://172.16.78.10:39017/predict"
-    payload = {"instruction": goal, "robot_obs": robot_obs_data}
-    files = {
-        "json": json.dumps(payload),
-        "img_static": ("img_stat.txt", img_static_data, "text/plain"),
-        "img_gripper": ("img_grip.txt", img_gripper_data, "text/plain"),
-    }
-    action = requests.post(url, files=files)
-    print(action.json())
-    print(action)
-
     # goal = "pick up a bottle for me"
-    # scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_scene.jpg"
-    # wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_wrist.jpg"
-    # robot_obs = [1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
-    # vla_client = VLAClient(host="172.16.78.10", port=39017)
-    # actions = vla_client.predict_traj(goal=goal,
-    #                                 robot_obs=robot_obs,
-    #                                 scene_pth=scene_pth,
-    #                                 wrist_pth=wrist_pth)
-    # print(actions)
+    # path_static = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_scene.jpg"
+    # path_gripper = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_wrist.jpg"
+    # image_static = Image.open(path_static).convert("RGB")
+    # img_static = np.array(image_static)
+    # image_gripper = Image.open(path_gripper).convert("RGB")
+    # img_gripper = np.array(image_gripper)
+    # robot_obs_data = [1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
+    # img_static_data = img_static.tobytes()
+    # img_gripper_data = img_gripper.tobytes()
+    # url = "http://172.16.78.10:39017/predict"
+    # payload = {"instruction": goal, "robot_obs": robot_obs_data}
+    # files = {
+    #     "json": json.dumps(payload),
+    #     "img_static": ("img_stat.txt", img_static_data, "text/plain"),
+    #     "img_gripper": ("img_grip.txt", img_gripper_data, "text/plain"),
+    # }
+    # action = requests.post(url, files=files)
+    # print(action.json())
+    # print(action)
+    
+    goal = "pick up a bottle for me"
+    scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_scene.jpg"
+    wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/calvin_wrist.jpg"
+    robot_obs = [1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
+    vla_client = VLAClient(host="172.16.78.10", port=5050)
+    actions = vla_client.predict_traj(goal=goal,
+                                    robot_obs=robot_obs,
+                                    scene_pth=scene_pth,
+                                    wrist_pth=wrist_pth)
+    print(actions)
 
