@@ -44,7 +44,7 @@ def run():
     print("[INFO] Activating gripper...")
     gripper.activate()
     gripper_status = GP_OPEN
-
+    
     ## Publisher
     pose_pub = rospy.Publisher('robot/pose', Float64MultiArray, queue_size=10)
     
@@ -56,8 +56,8 @@ def run():
                 # print("Current motion state" , motion_state)
                 
                 # send command to robot 
-                rtde_ctl.speedL(motion_state, acceleration = 1.5, time = 0.1) # adjust the acceleration if required 
-
+                rtde_ctl.speedL(motion_state, acceleration = 1.0, time = 0.1) # adjust the acceleration if required | 1.5 | 1.0
+                
                 # get tcp velocity of robot
                 actual_velocity = rtde_rcv.getActualTCPSpeed()
                 actual_velocity = [0 if abs(x) < 0.01 else x for x in actual_velocity] #filter out extremely small numbers
@@ -73,17 +73,15 @@ def run():
                 if sp_mouse.is_button_pressed(0):
                     gripper_status = GP_OPEN
                     gripper.move(gripper.get_open_position(), 255, 255)
-                
                 if sp_mouse.is_button_pressed(1):
                     gripper_status = GP_CLOSE
                     gripper.move(gripper.get_closed_position(), 255, 255)
+                # print("Gripper Position (0 to 255): ", gripper.get_current_position())
                 
                 pose_msg = Float64MultiArray()
-                pose_msg.data = axis_cart.tolist() + euler.tolist() + list([float(gripper_status)])
+                pose_msg.data = axis_cart.tolist() + quat.tolist() + list([float(gripper_status)])
                 pose_pub.publish(pose_msg)
                 
-                # print("Gripper Position (0 to 255): ", gripper.get_current_position())
-
                 # wait awhile before proceeding 
                 time.sleep(1/100)
 

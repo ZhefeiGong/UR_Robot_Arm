@@ -3,6 +3,7 @@
 import sys
 import cv2
 import rospy
+from copy import deepcopy
 import numpy as np
 import geometry_msgs.msg as geometry_msgs
 import ur5e_ctrl_jeff.msg
@@ -48,8 +49,8 @@ def preprocess_image(scene_Image, wrist_Image):
     # wrist
     wrist_Image = wrist_Image.convert("RGB")
     b,g,r = wrist_Image.split()
-    wrist_Image = Image.merge("RGB", (r,g,b))
-    wrist_Image = wrist_Image.transpose(Image.ROTATE_180)
+    wrist_Image = Image.merge("RGB", (b,g,r)) # berkeleyur5-bgr
+    wrist_Image = wrist_Image.transpose(Image.ROTATE_180) # berkeleyur5-rotate
 
     return scene_Image, wrist_Image
 
@@ -75,8 +76,12 @@ def postprocess_action(robot_state, actions):
     robot_actions = []
     for idx_num in range(action_num):
         for idx_dim in range(action_dim):
-            robot_state[idx_dim] += actions[idx_num*action_dim + idx_dim]
-        robot_actions.append(robot_state)
+            if idx_dim + 1 != action_dim:
+                robot_state[idx_dim] += actions[idx_num*action_dim + idx_dim]
+            else:
+                robot_state[idx_dim] = actions[idx_num*action_dim + idx_dim]
+        print(robot_state)
+        robot_actions.append(deepcopy(robot_state))
     robot_actions = np.stack(robot_actions, axis=0)
     return robot_actions
 
@@ -95,17 +100,19 @@ def run():
     ### get the initial image
     ask_confirmation(prompt="we'll start the client to recieve the msg from VLA")
     vla_client = VLAClient(host="192.168.2.7", port=5050)
-
+    
     ### 
     goal = "Take the tiger out of the red bowl and put it in the grey bowl"
     scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/scene.jpg"
     wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/wrist.jpg"
 
+    if_ask_confirmation= True
+    
     ### run
     while True:
         
         ### get the initial image
-        ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
+        if if_ask_confirmation: ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
         scene_cur_image = Image.fromarray(scene_image_subscriber.get_current_image())
         wrist_cur_image = Image.fromarray(wrist_image_subscriber.get_current_image())
         scene_cur_image,wrist_cur_image = preprocess_image(scene_cur_image,wrist_cur_image)
@@ -113,7 +120,7 @@ def run():
         wrist_cur_image.save(wrist_pth)
 
         ### get the robot state
-        ask_confirmation(prompt="we'll build the current state of the robot...")
+        if if_ask_confirmation: ask_confirmation(prompt="we'll build the current state of the robot...")
         robot_state = motion_client.get_state() # [1,7]
         robot_state_euler = quaternion_to_euler(robot_state) # [1,6]
         print('[INFO] robot state | quat : \n', robot_state)
@@ -126,9 +133,10 @@ def run():
         print('[INFO] robot obs : \n', robot_obs)
 
         ### get the actions
-        ask_confirmation(prompt="we'll recieve the state from ur5e...")
+        if if_ask_confirmation: ask_confirmation(prompt="we'll recieve the state from ur5e...")
         actions = vla_client.predict_traj(goal=goal,robot_obs=robot_obs,scene_pth=scene_pth,wrist_pth=wrist_pth)
         print('[INFO] robot action | raw : \n', actions)
+        print('[INFO] robot state | euler | before : \n', robot_state_euler)
         robot_actions = postprocess_action(robot_state_euler, actions)
         print('[INFO] robot action | len : \n', len(robot_actions))
         print('[INFO] robot action | euler : \n', robot_actions)
@@ -136,14 +144,14 @@ def run():
         print('[INFO] robot action | euler | curtailed : \n', robot_actions)
 
         ### get the command
-        ask_confirmation(prompt="we'll converse the instruction...")
+        if if_ask_confirmation: ask_confirmation(prompt="we'll converse the instruction...")
         action_arrary_quaternion = euler_to_quaternion(robot_actions)
-        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=5, duration=3)
+        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=1, duration=1)
         print('[INFO] robot action | pose : \n',pose_list)
         print('[INFO] robot action | gripper : \n',grip_list)
         print('[INFO] robot action | duration : \n',duration_list)
         
-        ask_confirmation(prompt="we'll execute the trajectory...")
+        if if_ask_confirmation: ask_confirmation(prompt="we'll execute the trajectory...")
         motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list, is_ask_conf=False)
 
 if __name__ == "__main__":

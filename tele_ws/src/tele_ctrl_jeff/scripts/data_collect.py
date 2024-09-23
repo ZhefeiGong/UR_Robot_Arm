@@ -14,11 +14,11 @@ import tele_ctrl_jeff
 from wrist_camera import WristSubscriber
 from scene_camera import SceneSubscriber
 
-ROOTPATH = "/home/robot/DATASET"
-NAME = "test"
-SLEEP = 1.0
+ROOTPATH = "/home/robot/DATASET/0923/bowl"
+NAME = "bowl-green-red"
+SLEEP = 0.5
 ID = 0
-TASK = "Sweep the green cloth to the left side of the table"
+TASK = "put the smaller green bowl into the red bowl"
 """
     🌟 category :
     1. Take the tiger out of the red bowl and put it in the grey bowl.
@@ -35,12 +35,11 @@ def preprocess_image(scene_Image, wrist_Image):
     scene_Image = scene_Image.convert("RGB")
     b,g,r = scene_Image.split()
     scene_Image = Image.merge("RGB", (r,g,b))
-    scene_Image = scene_Image.transpose(Image.ROTATE_180)
+    scene_Image = scene_Image.transpose(Image.ROTATE_180) # fix the setting error
     # wrist
     wrist_Image = wrist_Image.convert("RGB")
     b,g,r = wrist_Image.split()
     wrist_Image = Image.merge("RGB", (r,g,b))
-    wrist_Image = wrist_Image.transpose(Image.ROTATE_180)
 
     return scene_Image, wrist_Image
 
@@ -87,6 +86,7 @@ def run(args):
     wrist_image_subscriber = WristSubscriber()
     robot_state_subscriber = RobotStateSubcriber()
     
+    root_path=""
     data_list = []
     img_count = 1
     rospy.loginfo("---------------[BEGIN]---------------")
