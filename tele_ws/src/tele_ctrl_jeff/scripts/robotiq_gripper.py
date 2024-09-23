@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+import rospy
 import socket
 import threading
 import time

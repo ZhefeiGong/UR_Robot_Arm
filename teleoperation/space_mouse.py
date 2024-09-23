@@ -1,14 +1,13 @@
-from rtde_control import RTDEControlInterface
-from rtde_receive import RTDEReceiveInterface 
-from rtde_io import RTDEIOInterface as RTDEIO
-import robotiq_gripper
+#!/usr/bin/env python
 from spnav import spnav_open, spnav_poll_event, spnav_close, SpnavMotionEvent, SpnavButtonEvent
 from threading import Thread, Event
 from collections import defaultdict
 import numpy as np
 import time
 
-class Spacemouse(Thread):
+SCALE_FACTOR = 0.3  # Scale factor for velocity command
+
+class SpaceMouse(Thread):
     def __init__(self, max_value=500, deadzone=(0,0,0,0,0,0), dtype=np.float32):
         """
         Continuously listen to 3D connection space naviagtor events
@@ -103,71 +102,5 @@ class Spacemouse(Thread):
         finally:
             spnav_close()
 
-# Define robot parameters
-ROBOT_HOST = "192.168.2.4"  # IP address of the robot controller
-SCALE_FACTOR = 0.3 # Scale factor for velocity command
-
-def main():
-    sm = Spacemouse()
-    sm.start()
-    # Initialize RTDEControlInterface
-    rtde_c = RTDEControlInterface(ROBOT_HOST)
-    rtde_r = RTDEReceiveInterface(ROBOT_HOST)
-    rtde_io = RTDEIO(ROBOT_HOST)
-    
-    print("Creating gripper...")
-    gripper = robotiq_gripper.RobotiqGripper()
-    print("Connecting to gripper...")
-    gripper.connect(ROBOT_HOST, 63352)
-    print("Activating gripper...")
-    gripper.activate()
-    gripper_position = gripper.get_current_position()
-    try:
-        while True:
-            if rtde_r.getRobotMode() == 7:
-                # Read motion state from SpaceMouse
-                motion_state = sm.get_motion_state_transformed()
-                
-                #send command to robot 
-                rtde_c.speedL(motion_state, acceleration = 1.5, time = 0.1) #adjust the acceleration if required 
-                
-                # get TCP velocity of robot
-                actual_velocity = rtde_r.getActualTCPSpeed()
-                actual_velocity = [0 if abs(x) < 0.01 else x for x in actual_velocity] #filter out extremely small numbers
-                print("Current velocity vector" , actual_velocity)
-
-                # get TCP pose of robot
-                actual_pose = rtde_r.getActualTCPPose()
-                print("Current velocity pose", actual_pose)
-                
-                if sm.is_button_pressed(0):
-                    gripper_position += 3
-                    gripper.move(gripper_position, 155, 255)
-
-                if sm.is_button_pressed(1):
-                    gripper_position -= 3
-                    gripper.move(gripper_position, 155, 255)
-                
-                if gripper_position < 0:
-                    gripper_position = 0
-
-                if gripper_position > 255:
-                    gripper_position = 255
-
-                print("Gripper Position (0 to 255): ", gripper_position)
-    
-                #wait awhile before proceeding 
-                time.sleep(1/100)
-
-            else:
-                print("Robot is not ready.")
-                time.sleep(1)  # Wait longer if robot is not ready
-
-    except KeyboardInterrupt:
-        # Handle graceful shutdown here
-        print("Stopping robot")
-        rtde_c.stopScript()
-        sm.stop()
-
 if __name__ == "__main__":
-    main()
+    pass

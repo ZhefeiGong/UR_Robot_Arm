@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from rtde_control import RTDEControlInterface
 from rtde_receive import RTDEReceiveInterface 
 from rtde_io import RTDEIOInterface as RTDEIO
@@ -10,7 +11,7 @@ from utils import axis_to_euler
 # Define robot parameters
 ROBOT_HOST = "192.168.2.4"  # IP address of the robot controller
 
-def main():
+def run():
     sm = SpaceMouse()
     sm.start()
     # Initialize RTDEControlInterface
@@ -82,4 +83,4 @@ def main():
         sm.stop()
 
 if __name__ == "__main__":
-    main()
+    run()

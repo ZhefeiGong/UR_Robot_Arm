@@ -12,7 +12,7 @@ lsusb
 
 ## Download RTDE library 
 ```bash
-pip install -- user ur_rtde 
+pip install ur_rtde 
 ```
 
 ## Run spacemouse script 
