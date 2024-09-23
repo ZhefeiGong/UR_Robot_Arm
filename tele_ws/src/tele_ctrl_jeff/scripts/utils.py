@@ -19,7 +19,7 @@ def axis_to_euler(axis_angle):
     euler = rotation.as_euler("xyz", degrees=False)
     return euler
 
-def axis_to_quaternion(axis_angle):
+def axis_to_quat(axis_angle):
     """
     @input : rx,ry,rz - [axis angle] | array
     @output : qx,qy,qz,qw - [quat] | array

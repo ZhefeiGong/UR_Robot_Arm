@@ -6,16 +6,18 @@ import json
 import time
 import rospy
 import argparse
-
+from PIL import Image
 import numpy as np
-from wrist_camera import WristCamera
-from scene_camera import SceneCamera
-from utils import capture_image, action_to_command, ask_confirmation
+from std_msgs.msg import Float64MultiArray
 
+import tele_ctrl_jeff
+from wrist_camera import WristSubscriber
+from scene_camera import SceneSubscriber
 
-CLASS = "Cloth"
-SLEEP = 0.5
-ID = 54
+ROOTPATH = "/home/robot/DATASET"
+NAME = "test"
+SLEEP = 1.0
+ID = 0
 TASK = "Sweep the green cloth to the left side of the table"
 """
     🌟 category :
@@ -25,195 +27,145 @@ TASK = "Sweep the green cloth to the left side of the table"
     4. Put the ranch bottle into the pot.
 """
 
-COMMAND = "move"
-"""
-    🌟 category :
-    1. listen
-    2. move
-    3. collect
-"""
+def preprocess_image(scene_Image, wrist_Image):
+    """
+    @func : 
+    """
+    # scene
+    scene_Image = scene_Image.convert("RGB")
+    b,g,r = scene_Image.split()
+    scene_Image = Image.merge("RGB", (r,g,b))
+    scene_Image = scene_Image.transpose(Image.ROTATE_180)
+    # wrist
+    wrist_Image = wrist_Image.convert("RGB")
+    b,g,r = wrist_Image.split()
+    wrist_Image = Image.merge("RGB", (r,g,b))
+    wrist_Image = wrist_Image.transpose(Image.ROTATE_180)
 
+    return scene_Image, wrist_Image
 
 class NumpyEncoder(json.JSONEncoder):
-    """
-    
-    """
-
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(NumpyEncoder, self).default(obj)
 
-def ensure_folder_exists(folder_path):
+class RobotStateSubcriber:
+    def __init__(self):
+        rospy.Subscriber('robot/pose', Float64MultiArray, self.callback)
+        self.state = None
+    def callback(self, msg):
+        self.state = msg.data
+    def get_current_state(self):
+        return self.state
+
+def ensure_folder_exists(folder_path, args):
     """
     Check if the folder exists
-    
     """
-
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-
-    return
-
-def save_data(file_path, new_data):
-    """
-    
-    """
-
-    if os.path.exists(file_path):
-        existing_data = np.loadtxt(file_path, delimiter=',')
-        if existing_data.ndim == 1:
-            existing_data = existing_data[np.newaxis, :]
-        data_to_save = np.vstack((existing_data, new_data))
     else:
-        data_to_save = new_data
-    
-    np.savetxt(file_path, data_to_save, delimiter=',')
+        count= args['id']
+        while True:
+            folder_path_tmp = folder_path + str(count)
+            if not os.path.exists(folder_path_tmp):
+                os.makedirs(folder_path_tmp)
+                return folder_path_tmp
+            else:
+                count += 1
 
-def collect_to_pose(args):
+def run(args):
     """
     
     """
+    rospy.init_node("data_collect")
 
-    rospy.init_node("collecting")
-
-    time_sleep = SLEEP
-
-    camera_w = WristCamera()
-    camera_s = SceneCamera()
-
-    camera_w.start()
-    camera_s.start()
-    motion_client = MotionCommander()
-
-    root_path = f"/home/robot/DATASET/{CLASS}/"+"traj"+str(args['collect_id'])+"/"
-    root_img_path_scene = root_path + "image/scene/"
-    root_img_path_wrist = root_path + "image/wrist/"
-    ensure_folder_exists(root_path)
-    ensure_folder_exists(root_img_path_scene)
-    ensure_folder_exists(root_img_path_wrist)
+    time_sleep = args['time_sleep']
+    
+    scene_image_subscriber = SceneSubscriber()
+    wrist_image_subscriber = WristSubscriber()
+    robot_state_subscriber = RobotStateSubcriber()
     
     data_list = []
-
-    mode = "NONE"
     img_count = 1
+    rospy.loginfo("---------------[BEGIN]---------------")
+    window_name = "window"
+    cv2.namedWindow(window_name)
+    mode = "NONE"
+    blank_image = np.zeros((500,500,3),np.uint8)
 
-    if camera_w.wait_for_ready() and camera_s.wait_for_ready():
+    while True : 
         
-        rospy.loginfo(" ---- begin ---- ")
+        cv2.imshow(window_name,blank_image)
+        key = cv2.waitKey(10) & 0xFF
+        if key == ord('b'):
+            root_path = args['root_path'] + '/' + args['name']
+            root_path = ensure_folder_exists(root_path, args)
+            root_img_path_scene = root_path +'/'+ "image/scene/"
+            root_img_path_wrist = root_path +'/'+ "image/wrist/"
+            ensure_folder_exists(root_img_path_scene, args)
+            ensure_folder_exists(root_img_path_wrist, args)
+            rospy.loginfo(f"[INFO] collect to : {root_path}")
+            data_list = []
+            img_count = 1
+            mode = "collecting"
+        elif key == ord('e'):
+            json_path = root_path + "/" +"data.json"
+            with open(json_path, 'w') as json_file:
+                json_str = json.dumps(data_list, cls=NumpyEncoder, indent=4, ensure_ascii=False)
+                json_file.write(json_str)
+            rospy.loginfo(f"[INFO] save to : {json_path}")
+            mode = "NONE"
+        elif key == ord('q'):
+            rospy.loginfo("[INFO] exit...")
+            mode = "quit"
 
-        window_name = "window"
-        cv2.namedWindow(window_name)
-        blank_image = np.zeros((500,500,3),np.uint8)
-
-        while True : 
+        ### collectiong
+        if mode == "collecting":
+            img_path_scene = root_img_path_scene + 'scene' + str(img_count) + '.jpg'
+            img_path_wrist = root_img_path_wrist + 'wrist' + str(img_count) + '.jpg'
+            scene_cur_image = Image.fromarray(scene_image_subscriber.get_current_image())
+            wrist_cur_image = Image.fromarray(wrist_image_subscriber.get_current_image())
+            scene_cur_image,wrist_cur_image = preprocess_image(scene_cur_image,wrist_cur_image)
+            scene_cur_image.save(img_path_scene)
+            wrist_cur_image.save(img_path_wrist)
             
-            cv2.imshow(window_name,blank_image)
-            key = cv2.waitKey(10) & 0xFF
-            if key == ord('c'):
-                mode = "collecting"
-            elif key == ord('q'):
-                mode = "quit"
+            data = {
+                "imgw" : None,
+                "imgs" : None,
+                "task" : None,
+                "pose" : None,
+            }
+            data['imgs'] = img_path_scene
+            data['imgw'] = img_path_wrist
+            data['task'] = args['task']
 
-            ###
-            if mode == "collecting":
-                
-                img_path_scene = root_img_path_scene + 'scene' + str(img_count) + '.jpg'
-                img_path_wrist = root_img_path_wrist + 'wrist' + str(img_count) + '.jpg'
+            robot_state = robot_state_subscriber.get_current_state()
+            data['pose'] = np.array(robot_state)
 
-                capture_image(camera_w,img_path_wrist)
-                capture_image(camera_s,img_path_scene)
+            data_list.append(data)
+            img_count += 1
+            time.sleep(time_sleep)
 
-                data = {
-                    "imgw" : None,
-                    "imgs" : None,
-                    "task" : None,
-                    "pose" : None,
-                }
-                data['imgs'] = '/image/scene/scene' + str(img_count) + '.jpg'
-                data['imgw'] = '/image/wrist/wrist' + str(img_count) + '.jpg'
-                data['task'] = args['task']
-
-                robot_state = motion_client.get_state()
-                data['pose'] = np.array(robot_state[0])
-                data_list.append(data)
-
-                img_count += 1
-                time.sleep(time_sleep)
-
-            ###
-            elif mode == "quit":
-
-                json_path = root_path + "data.json"
-                with open(json_path, 'w') as json_file:
-                    json_str = json.dumps(data_list, cls=NumpyEncoder, indent=4, ensure_ascii=False)
-                    json_file.write(json_str)
-
-                break
-            
-    else:
-        rospy.loginfo("[ERROR] wait for the camera to time out")
-
-    camera_w.stop()
-    camera_s.stop()
+        ### quit
+        elif mode == "quit":
+            break
+    
     cv2.destroyAllWindows()
 
-def listen_to_pose(args):
-    """
-    
-    """
-
-    rospy.init_node("listening")
-    motion_client = MotionCommander()
-    rospy.loginfo(" ---- begin ---- ")
-
-    robot_state = motion_client.get_state()[0]
-    if args['is_gripper_open'] : 
-        robot_state[-1]=0.0
-    else :
-        robot_state[-1]=1.0
-    save_data(args['save_traj_path'], robot_state)
-
-    rospy.loginfo(f"save to {args['save_traj_path']}")
-
-def move_to_pose(args):
-    """
-    
-    """
-
-    rospy.init_node("moving")
-    if os.path.exists(args['save_traj_path']):
-        traj_arrary = np.loadtxt(args['save_traj_path'], delimiter=',')
-    motion_client = MotionCommander()
-    rospy.loginfo(" ---- begin ---- ")
-
-    pose_list, grip_list, duration_list = action_to_command(traj_arrary, first_duration=8, duration=8)
-
-    rospy.loginfo(pose_list)
-    rospy.loginfo(grip_list)
-    rospy.loginfo(duration_list)
-
-    ask_confirmation(prompt="we'll execute the trajectory...")
-    motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
 
 
 if __name__ == "__main__":
 
-    ###
+
     args = {
-        'collect_id': ID,
-        'is_gripper_open': True,
-        'save_traj_path': f"/home/robot/DATASET/{CLASS}/pose.csv",
+        'id': ID,
+        'root_path': ROOTPATH,
         'task' : TASK, 
-        'command': COMMAND , 
+        'name' : NAME,
+        'time_sleep' : SLEEP,
     }
-    
-    ###
-    if args['command'] == "collect":
-        collect_to_pose(args)
-    elif args['command'] == "listen":
-        listen_to_pose(args)
-    elif args['command'] == "move":
-        move_to_pose(args)
-    else:
-        rospy.logwarn("the command is not found")
+
+    run(args)
+
