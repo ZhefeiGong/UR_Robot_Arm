@@ -99,7 +99,7 @@ def run():
 
     ### get the initial image
     ask_confirmation(prompt="we'll start the client to recieve the msg from VLA")
-    vla_client = VLAClient(host="192.168.2.7", port=5050)
+    vla_client = VLAClient(host="192.168.2.4", port=5050)
     
     ### 
     goal = "Take the tiger out of the red bowl and put it in the grey bowl"
@@ -146,7 +146,7 @@ def run():
         ### get the command
         if if_ask_confirmation: ask_confirmation(prompt="we'll converse the instruction...")
         action_arrary_quaternion = euler_to_quaternion(robot_actions)
-        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=1, duration=1)
+        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=5, duration=3)
         print('[INFO] robot action | pose : \n',pose_list)
         print('[INFO] robot action | gripper : \n',grip_list)
         print('[INFO] robot action | duration : \n',duration_list)

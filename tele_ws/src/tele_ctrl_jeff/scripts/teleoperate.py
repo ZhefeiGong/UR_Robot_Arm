@@ -15,7 +15,7 @@ from space_mouse import SpaceMouse
 from utils import axis_to_euler,axis_to_quat
 
 # define robot parameters
-ROBOT_HOST = "192.168.2.4"
+ROBOT_HOST = "192.168.2.2"
 
 GP_OPEN = 0
 GP_CLOSE = 1
