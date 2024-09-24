@@ -14,17 +14,22 @@ import tele_ctrl_jeff
 from wrist_camera import WristSubscriber
 from scene_camera import SceneSubscriber
 
-ROOTPATH = "/home/robot/DATASET/0923/bowl"
+ROOTPATH = "/home/robot/DATASET/0924/bowl"
 NAME = "bowl-green-red"
 SLEEP = 0.5
 ID = 0
 TASK = "put the smaller green bowl into the red bowl"
 """
     🌟 category :
-    1. Take the tiger out of the red bowl and put it in the grey bowl.
-    2. Sweep the green cloth to the left side of the table.
-    3. Pick up the blue cup and put it into the brown cup.
-    4. Put the ranch bottle into the pot.
+    1.  put the smaller blue bowl into the grey bowl
+        put the smaller blue bowl into the red bowl
+        put the smaller green bowl into the grey bowl
+        put the smaller green bowl into the red bowl
+    2.  pick up the blue cup for me
+        pick up the green cup for me
+        pick up the red cup for me
+    3.  Take the tiger out of the red bowl and put it in the grey bowl
+        Take the tiger out of the red bowl and put it in the green bowl
 """
 
 def preprocess_image(scene_Image, wrist_Image):

@@ -80,7 +80,6 @@ def postprocess_action(robot_state, actions):
                 robot_state[idx_dim] += actions[idx_num*action_dim + idx_dim]
             else:
                 robot_state[idx_dim] = actions[idx_num*action_dim + idx_dim]
-        print(robot_state)
         robot_actions.append(deepcopy(robot_state))
     robot_actions = np.stack(robot_actions, axis=0)
     return robot_actions
@@ -102,7 +101,7 @@ def run():
     vla_client = VLAClient(host="192.168.2.4", port=5050)
     
     ### 
-    goal = "Take the tiger out of the red bowl and put it in the grey bowl"
+    goal = "Put the smaller blue bowl into the red bowl"
     scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/scene.jpg"
     wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/wrist.jpg"
 
@@ -146,14 +145,14 @@ def run():
         ### get the command
         if if_ask_confirmation: ask_confirmation(prompt="we'll converse the instruction...")
         action_arrary_quaternion = euler_to_quaternion(robot_actions)
-        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=5, duration=3)
+        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=3, duration=2)
         print('[INFO] robot action | pose : \n',pose_list)
         print('[INFO] robot action | gripper : \n',grip_list)
         print('[INFO] robot action | duration : \n',duration_list)
         
         if if_ask_confirmation: ask_confirmation(prompt="we'll execute the trajectory...")
         motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list, is_ask_conf=False)
-
+        
 if __name__ == "__main__":
     run()
 
