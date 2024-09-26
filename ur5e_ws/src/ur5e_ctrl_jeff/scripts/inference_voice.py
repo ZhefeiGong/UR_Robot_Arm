@@ -3,6 +3,7 @@
 import sys
 import cv2
 import rospy
+import math
 from copy import deepcopy
 import numpy as np
 import geometry_msgs.msg as geometry_msgs
@@ -49,8 +50,8 @@ def preprocess_image(scene_Image, wrist_Image):
     # wrist
     wrist_Image = wrist_Image.convert("RGB")
     b,g,r = wrist_Image.split()
-    wrist_Image = Image.merge("RGB", (b,g,r)) # berkeleyur5-bgr
-    wrist_Image = wrist_Image.transpose(Image.ROTATE_180) # berkeleyur5-rotate
+    wrist_Image = Image.merge("RGB", (r,g,b)) # berkeleyur5-bgr
+    # wrist_Image = wrist_Image.transpose(Image.ROTATE_180) # berkeleyur5-rotate
 
     return scene_Image, wrist_Image
 
@@ -68,21 +69,112 @@ def preprocess_state(joints, poses, action_blocked=0.0):
 
 def postprocess_action(robot_state, actions):
     """
-    @func : 
+    @input : robot_state := 2d array, actions := 2d array
     """
     action_dim = 7
-    action_num = len(actions)//action_dim
-    robot_state = robot_state[0]
+    action_num = len(actions)
+    robot_state = deepcopy(robot_state[0])
     robot_actions = []
     for idx_num in range(action_num):
-        for idx_dim in range(action_dim):
-            if idx_dim + 1 != action_dim:
-                robot_state[idx_dim] += actions[idx_num*action_dim + idx_dim]
-            else:
-                robot_state[idx_dim] = actions[idx_num*action_dim + idx_dim]
+
+        # for idx_dim in range(action_dim):
+        #     if idx_dim + 1 != action_dim:
+        #         robot_state[idx_dim] += actions[idx_num*action_dim + idx_dim]
+        #     else:
+        #         robot_state[idx_dim] = actions[idx_num*action_dim + idx_dim]            
+        #     # # rx build gap
+        #     # if robot_state[3] < -math.pi:
+        #     #     robot_state[3] = math.pi + (robot_state[3] + math.pi)
+        #     # elif robot_state[3] >= math.pi:
+        #     #     robot_state[3] = -math.pi + (robot_state[3] - math.pi)
+        #     # # ry build gap
+        #     # if robot_state[4] < -math.pi:
+        #     #     robot_state[4] = math.pi + (robot_state[4] + math.pi)
+        #     # elif robot_state[4] >= math.pi:
+        #     #     robot_state[4] = -math.pi + (robot_state[4] - math.pi)
+        #     # # rz build gap
+        #     # if robot_state[5] < -math.pi:
+        #     #     robot_state[5] = math.pi + (robot_state[5] + math.pi)
+        #     # elif robot_state[5] >= math.pi:
+        #     #     robot_state[5] = -math.pi + (robot_state[5] - math.pi)
+        
+        ### update
+        robot_state[:6] += actions[idx_num,:6]
+        robot_state[6] = actions[idx_num,6]
+
+        ### build the [-pi ~ pi] gap | rx,ry,rz
+        for i in range(3,6):
+            if robot_state[i] < -math.pi:
+                robot_state[i] = math.pi + (robot_state[i] + math.pi)
+            elif robot_state[i] >= math.pi:
+                robot_state[i] = -math.pi + (robot_state[i] - math.pi)
+        
+        ### update
         robot_actions.append(deepcopy(robot_state))
+
     robot_actions = np.stack(robot_actions, axis=0)
     return robot_actions
+
+def process_npz(root_path):
+    """
+    """
+    from PIL import Image
+    max_num = 24
+    actions = list()
+    print(np.load(f"{root_path}/auto_lang_ann.npy", allow_pickle=True))
+    for i in range(max_num):
+        formatted_num = str(i+1).zfill(7)
+        data_path = f"{root_path}/{formatted_num}.npz"
+        data = np.load(data_path)
+        rel_actions = data['rel_actions']
+        rgb_static = data['rgb_static']
+        rgb_gripper = data['rgb_gripper']
+        robot_obs = data['robot_obs']
+        print(rel_actions)
+        actions.append(rel_actions)
+        # print("arrays :", data.files)
+        # print(rel_actions.shape)
+        # print(rgb_static.shape)
+        # print(rgb_gripper.shape)
+        # print(robot_obs.shape)
+        # import cv2
+        # cv2.imwrite('/home/robot/rgb_static.jpg', rgb_static) # save in bgr order
+        # cv2.imwrite('/home/robot/rgb_gripper.jpg', rgb_gripper) # save in bgr order
+
+        # rgb_static_img = Image.fromarray(rgb_static)
+        # rgb_gripper_img = Image.fromarray(rgb_gripper)
+        # rgb_static_img.save(f'{root_path}/image/rgb_static_{formatted_num}.png') # save in rgb order
+        # rgb_gripper_img.save(f'{root_path}/image/rgb_gripper_{formatted_num}.png') # save in rgb order
+    # actions_arr = np.array(actions)
+    # np.savez(f"{root_path}/actions.npz", actions = actions_arr)
+
+def get_process_actions(path='/home/robot/data_tmp/training_test/actions.npz'):
+    data = np.load(path)
+    return data['actions']
+
+def print_2d_arr(info,actions):
+    """"""
+    print(info)
+    for row in actions: 
+        print('[', end="")
+        for v in row:
+            print(f"{v:.7f}", end="")
+            print(' ', end="")
+        print(']')
+    return
+
+def normalize_action(actions, means, stds):
+    """
+    @input : actions:=2d array, mean:=1d array, stds:=1d array
+    @func : 1.2450980
+    """
+    cratera = 1.24
+    coef = 2.5
+    actions_norm = (actions-means)/stds
+    actions_coef = np.ones(actions_norm.shape,actions_norm.dtype)
+    actions_coef[abs(actions_norm)>cratera]=coef
+    return actions_norm, actions_coef
+
 
 def run():
     """
@@ -101,14 +193,32 @@ def run():
     vla_client = VLAClient(host="192.168.2.4", port=5050)
     
     ### 
-    goal = "Put the smaller blue bowl into the red bowl"
+    goal = "put the smaller green bowl into the grey bowl"
     scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/scene.jpg"
     wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/wrist.jpg"
 
+    """
+    put the smaller green bowl into the grey bowl
+    take the tiger out of the red bowl and put it in the green bowl
+    pick up the green cup for me
+    """
+
     if_ask_confirmation= True
-    
+
+    ###@test@
+    # img_idx = 1 #@test@
+    # root_path = '/home/robot/data_tmp/training_test' #@test@
+
+
+    means = np.array([0.00245544, -0.00174869, -0.00113085, 0.0006589, 0.00253147, 0.00102762, 0.50635778]) # x.y,z + rx,ry,rz
+    stds = np.array([0.02039579, 0.01705823, 0.02590469, 0.01555712, 0.01804757, 0.02337257, 0.49995958]) # x.y,z + rx,ry,rz
+
     ### run
     while True:
+        
+        # #@test@
+        # if img_idx > 24:
+        #     break
         
         ### get the initial image
         if if_ask_confirmation: ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
@@ -117,44 +227,73 @@ def run():
         scene_cur_image,wrist_cur_image = preprocess_image(scene_cur_image,wrist_cur_image)
         scene_cur_image.save(scene_pth)
         wrist_cur_image.save(wrist_pth)
-
+        
+        # #@test@
+        # formatted_num = str(img_idx).zfill(7)
+        # data_path = f"{root_path}/{formatted_num}.npz"
+        # print(data_path)
+        # data = np.load(data_path)
+        # rgb_static = data['rgb_static']
+        # rgb_gripper = data['rgb_gripper']
+        # rgb_static_img = Image.fromarray(rgb_static)
+        # rgb_gripper_img = Image.fromarray(rgb_gripper)
+        # rgb_static_img.save(scene_pth) # save in rgb order
+        # rgb_gripper_img.save(wrist_pth) # save in rgb order
+        
         ### get the robot state
         if if_ask_confirmation: ask_confirmation(prompt="we'll build the current state of the robot...")
         robot_state = motion_client.get_state() # [1,7]
         robot_state_euler = quaternion_to_euler(robot_state) # [1,6]
-        print('[INFO] robot state | quat : \n', robot_state)
-        print('[INFO] robot state | euler : \n', robot_state_euler)
+        print_2d_arr('[INFO] robot state | quat : ', robot_state)
+        print_2d_arr('[INFO] robot state | euler : ', robot_state_euler)
         robot_joint = np.array([joint_subscriber.get_joint_states('position')]) # [1,6]
-        print('[INFO] robot joint : \n', robot_joint)
+        print_2d_arr('[INFO] robot joint : ', robot_joint)
         robot_state = list(robot_state[0])
         robot_joint = list(robot_joint[0])
-        robot_obs = preprocess_state(joints=robot_joint,poses=robot_state)
-        print('[INFO] robot obs : \n', robot_obs)
-
+        robot_obs = preprocess_state(joints=robot_joint,poses=robot_state) # [15,]
+        print_2d_arr('[INFO] robot obs : ', [robot_obs])
+        
         ### get the actions
         if if_ask_confirmation: ask_confirmation(prompt="we'll recieve the state from ur5e...")
         actions = vla_client.predict_traj(goal=goal,robot_obs=robot_obs,scene_pth=scene_pth,wrist_pth=wrist_pth)
-        print('[INFO] robot action | raw : \n', actions)
-        print('[INFO] robot state | euler | before : \n', robot_state_euler)
-        robot_actions = postprocess_action(robot_state_euler, actions)
-        print('[INFO] robot action | len : \n', len(robot_actions))
-        print('[INFO] robot action | euler : \n', robot_actions)
+        actions_raw = np.array(actions).reshape(-1,7)
+        # actions = np.array(get_process_actions()).reshape(-1,7) #@test@ 
+        print_2d_arr('[INFO] robot action | raw : ', actions_raw)
+
+        ### normal
+        actions_norm, actions_coef = normalize_action(actions_raw, means, stds)
+        print_2d_arr('[INFO] robot action | raw | norm : ', actions_norm)
+        print_2d_arr('[INFO] robot action | raw | coef : ', actions_coef)
+        # actions_shift = actions_raw * actions_coef
+        # print_2d_arr('[INFO] robot action | raw | shift : ', actions_shift)
+        
+        ### get obs actions
+        robot_actions = postprocess_action(robot_state_euler, actions_raw) # raw or shift
+        print_2d_arr('[INFO] robot state | euler | before : ', robot_state_euler)
+        print_2d_arr('[INFO] robot action | euler : ', robot_actions)
         robot_actions = curtail_duplicate_action(robot_actions)
-        print('[INFO] robot action | euler | curtailed : \n', robot_actions)
+        print_2d_arr('[INFO] robot action | euler | curtailed :', robot_actions)
 
         ### get the command
         if if_ask_confirmation: ask_confirmation(prompt="we'll converse the instruction...")
         action_arrary_quaternion = euler_to_quaternion(robot_actions)
-        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=3, duration=2)
+        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=3, duration=3)
         print('[INFO] robot action | pose : \n',pose_list)
         print('[INFO] robot action | gripper : \n',grip_list)
         print('[INFO] robot action | duration : \n',duration_list)
         
+        ### run
         if if_ask_confirmation: ask_confirmation(prompt="we'll execute the trajectory...")
         motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list, is_ask_conf=False)
         
+        # img_idx += 5 #@test@
+        
 if __name__ == "__main__":
+
     run()
+    # root_path = '/home/robot/data_tmp/training_test'
+    # process_npz(root_path)
+
 
 """
 🌟 category :
@@ -162,53 +301,4 @@ if __name__ == "__main__":
 2. Sweep the green cloth to the left side of the table.
 3. Pick up the blue cup and put it into the brown cup.
 4. Put the ranch bottle into the pot.    
-"""
-
-"""
-🌟 range :
-x : -0.75 ~ 0.00
-y : -0.75 ~ 0.00
-z : 0.20 ~ 0.75
-"""
-
-"""
-🌟🌟🌟 Tiger-4 🌟🌟🌟
-
-🌟 original
-[[-0.28779358 -0.50560178  0.39258813 -0.39346165 -0.91257039  0.10261079 0.04329246  0.        ]
- [-0.34448933 -0.5799649   0.24045356 -0.05108385 -0.97837303  0.19527888 0.0451975   1.        ]
- [-0.35433142 -0.52749795  0.37972002 -0.07073421 -0.96183267  0.25523876 0.0687587   1.        ]
- [-0.75433192 -0.44718822  0.30989092 -0.29757578 -0.8897512   0.29923767 0.17392031  0.        ]
- [-0.69341253 -0.45089179  0.40752026 -0.28544193 -0.93144124  0.20839132 0.08667859  0.        ]]
-
-🌟 mapped
-[[-0.02341261 -0.34111358  0.41555742 -0.39346165 -0.91257039  0.10261079 0.04329246  0.        ]
- [-0.09801227 -0.4443957   0.29067083 -0.05108385 -0.97837303  0.19527888 0.0451975   1.        ]
- [-0.1109624  -0.37152493  0.40499405 -0.07073421 -0.96183267  0.25523876 0.0687587   1.        ]
- [-0.63727884 -0.25998364  0.34767165 -0.29757578 -0.8897512   0.29923767 0.17392031  0.        ]
- [-0.55712175 -0.26512748  0.42781514 -0.28544193 -0.93144124  0.20839132 0.08667859  0.        ]]
-"""
-
-
-"""
-🌟🌟🌟 Bottle-6 🌟🌟🌟
-
-🌟 original
-[[-0.55935583 -0.57534852  0.3647796   0.39036752  0.9064039  -0.1595691 0.02414259  0.        ]
- [-0.6042515  -0.34438318  0.25835688 -0.47975619 -0.8670687   0.13370965 0.012149    0.        ]
- [-0.60700114 -0.35516387  0.15417322 -0.53291503 -0.84438056  0.05414724 0.00954518  1.        ]
- [-0.58911591 -0.341283    0.33939717 -0.52256426 -0.83134177  0.18321391 0.0472241   1.        ]
- [-0.49689463 -0.63534945  0.29619845  0.38136535  0.90666088 -0.17278228 0.05169911  1.        ]
- [-0.50287908 -0.64575297  0.21685555  0.38568214  0.91043886 -0.13875036 0.05566601  0.        ]
- [-0.53426955 -0.56432181  0.32394524 -0.39318641 -0.9166355   0.05521894 0.04620256  0.        ]]
-
-🌟 mapped
-[[-0.38073135 -0.43798405  0.39272952  0.39036752  0.9064039  -0.1595691 0.02414259  0.        ]
- [-0.4398046  -0.11719886  0.30536759 -0.47975619 -0.8670687   0.13370965 0.012149    0.        ]
- [-0.44342255 -0.13217204  0.21984369 -0.53291503 -0.84438056  0.05414724 0.00954518  1.        ]
- [-0.41988936 -0.11289305  0.3718932  -0.52256426 -0.83134177  0.18321391 0.0472241   1.        ]
- [-0.29854557 -0.52131868  0.33643156  0.38136535  0.90666088 -0.17278228 0.05169911  1.        ]
- [-0.30641984 -0.53576802  0.27129933  0.38568214  0.91043886 -0.13875036 0.05566601  0.        ]
- [-0.34772309 -0.42266918  0.35920878 -0.39318641 -0.9166355   0.05521894 0.04620256  0.        ]]
-
 """

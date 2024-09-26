@@ -621,14 +621,13 @@ if __name__ == "__main__":
         #     geometry_msgs.Quaternion(x=0.39036752, y=0.9064039, z=-0.1595691, w=0.02414259)
         # ),
         geometry_msgs.Pose(
-            geometry_msgs.Vector3(x=-0.17772022, y=-0.414869, z=0.46483793 ), 
-            geometry_msgs.Quaternion(x=-0.50108850, y=-0.8376079, z=0.1893253, w=.1071410)
+            geometry_msgs.Vector3(x=-0.3438464, y=-0.29426453, z=0.5376457 ), 
+            geometry_msgs.Quaternion(x=-0.3538287, y=-0.9337961, z=0.0413521, w=0.0334666)
         ),
     ]
     duration_list = [8.0]
     grip_list = [0]
     client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
-
 
     # from utils import quaternion_to_euler
     # state = client.get_state()
