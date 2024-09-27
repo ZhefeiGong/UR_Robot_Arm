@@ -168,11 +168,19 @@ def normalize_action(actions, means, stds):
     @input : actions:=2d array, mean:=1d array, stds:=1d array
     @func : 1.2450980
     """
-    cratera = 1.24
-    coef = 2.5
+    cratera = 1.0
+    thred_s = 1.75
+    thred_m = 2.25
     actions_norm = (actions-means)/stds
     actions_coef = np.ones(actions_norm.shape,actions_norm.dtype)
-    actions_coef[abs(actions_norm)>cratera]=coef
+    ### 
+    pos = abs(actions_norm[:,:6])>cratera
+    actions_coef[:, :6][pos]=deepcopy(abs(actions_norm[:, :6])[pos])
+    ### thred
+    # actions_coef[:, 0:2][actions_coef[:, 0:2]>thred_s]=thred_s
+    # actions_coef[:, 2][actions_coef[:, 2]>thred_m]=thred_m
+    # actions_coef[:, 3:][actions_coef[:, 3:]>thred_s]=thred_s
+
     return actions_norm, actions_coef
 
 
@@ -246,15 +254,16 @@ def run():
         robot_state_euler = quaternion_to_euler(robot_state) # [1,6]
         print_2d_arr('[INFO] robot state | quat : ', robot_state)
         print_2d_arr('[INFO] robot state | euler : ', robot_state_euler)
+        robot_state = list(robot_state[0]) # [7,]
         robot_joint = np.array([joint_subscriber.get_joint_states('position')]) # [1,6]
         print_2d_arr('[INFO] robot joint : ', robot_joint)
-        robot_state = list(robot_state[0])
-        robot_joint = list(robot_joint[0])
+        robot_joint = list(robot_joint[0]) # [6,]
+        # robot_joint = list([0.0,0.0,0.0,0.0,0.0,0.0])#@test@
         robot_obs = preprocess_state(joints=robot_joint,poses=robot_state) # [15,]
         print_2d_arr('[INFO] robot obs : ', [robot_obs])
         
         ### get the actions
-        if if_ask_confirmation: ask_confirmation(prompt="we'll recieve the state from ur5e...")
+        if if_ask_confirmation: ask_confirmation(prompt="we'll recieve the actions from model...")
         actions = vla_client.predict_traj(goal=goal,robot_obs=robot_obs,scene_pth=scene_pth,wrist_pth=wrist_pth)
         actions_raw = np.array(actions).reshape(-1,7)
         # actions = np.array(get_process_actions()).reshape(-1,7) #@test@ 
@@ -273,7 +282,7 @@ def run():
         print_2d_arr('[INFO] robot action | euler : ', robot_actions)
         robot_actions = curtail_duplicate_action(robot_actions)
         print_2d_arr('[INFO] robot action | euler | curtailed :', robot_actions)
-
+        
         ### get the command
         if if_ask_confirmation: ask_confirmation(prompt="we'll converse the instruction...")
         action_arrary_quaternion = euler_to_quaternion(robot_actions)

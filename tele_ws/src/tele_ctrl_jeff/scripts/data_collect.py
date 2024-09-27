@@ -14,11 +14,11 @@ import tele_ctrl_jeff
 from wrist_camera import WristSubscriber
 from scene_camera import SceneSubscriber
 
-ROOTPATH = "/home/robot/DATASET/0925/bowl"
-NAME = "bowl-blue-red"
-SLEEP = 0.5
+ROOTPATH = "/home/robot/DATASET/0927/tiger"
+NAME = "tiger-red-green"
+SLEEP = 0.20 # 0.5 | 0.2
 ID = 0
-TASK = "put the smaller blue bowl into the red bowl"
+TASK = "Take the tiger out of the red bowl and put it in the green bowl"
 """
     🌟 category :
     1.  put the smaller blue bowl into the grey bowl
