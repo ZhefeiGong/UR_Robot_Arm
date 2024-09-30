@@ -171,7 +171,7 @@ def normalize_action(actions, means, stds):
     cratera = 1.0
     thred_s = 1.75
     thred_m = 2.25
-    actions_norm = (actions-means)/stds
+    actions_norm = (actions-means)/stds # [(n,7)-(7,)]/(7,) = (n,7)
     actions_coef = np.ones(actions_norm.shape,actions_norm.dtype)
     ### 
     pos = abs(actions_norm[:,:6])>cratera
@@ -183,6 +183,20 @@ def normalize_action(actions, means, stds):
 
     return actions_norm, actions_coef
 
+def curtail_similar_action(action_arrary):
+    """
+    cut off the same action compared with the former one
+    @action_arrary has shape : [n,7]
+    """
+
+    cur_action_arrary = [action_arrary[0]]
+    crateria = 0.0001
+    for idx in range(1, action_arrary.shape[0]):
+        dis = np.linalg.norm(action_arrary[idx]-action_arrary[idx-1])
+        if dis > crateria:
+            cur_action_arrary.append(action_arrary[idx])
+    
+    return np.array(cur_action_arrary)
 
 def run():
     """
@@ -206,9 +220,9 @@ def run():
     wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/wrist.jpg"
 
     """
-    put the smaller green bowl into the grey bowl
+    put the smaller green bowl into the grey bowl | put the smaller blue bowl into the grey bowl
     take the tiger out of the red bowl and put it in the green bowl
-    pick up the green cup for me
+    pick up the blue cup for me | pick up the green cup for me | pick up the red cup for me
     """
 
     if_ask_confirmation= True
@@ -217,9 +231,17 @@ def run():
     # img_idx = 1 #@test@
     # root_path = '/home/robot/data_tmp/training_test' #@test@
 
+    ### whole | before
+    # means = np.array([0.00245544, -0.00174869, -0.00113085, 0.0006589, 0.00253147, 0.00102762, 0.50635778]) # x.y,z + rx,ry,rz
+    # stds = np.array([0.02039579, 0.01705823, 0.02590469, 0.01555712, 0.01804757, 0.02337257, 0.49995958]) # x.y,z + rx,ry,rz
 
-    means = np.array([0.00245544, -0.00174869, -0.00113085, 0.0006589, 0.00253147, 0.00102762, 0.50635778]) # x.y,z + rx,ry,rz
-    stds = np.array([0.02039579, 0.01705823, 0.02590469, 0.01555712, 0.01804757, 0.02337257, 0.49995958]) # x.y,z + rx,ry,rz
+    ### bowl
+    stds = np.array([0.01867459, 0.01744776, 0.03160221, 0.01219993, 0.00723566, 0.01521696, 0.49887265]) # x.y,z + rx,ry,rz
+    means = np.array([-2.82607529e-04, 4.61128253e-04, -1.89281170e-03, 4.17868941e-04, -2.03441399e-04, 1.17789528e-04, 4.66442953e-01]) # x.y,z + rx,ry,rz
+    
+    # ### cup
+    # stds = np.array([0.01868538, 0.01550688, 0.01875742, 0.01216158, 0.02432358, 0.0169647, 0.48593617]) # x.y,z + rx,ry,rz
+    # means = np.array([0.00693141926, -0.00491794886, -0.00109596073, 0.0000473991865, 0.00830309429, 0.00255002412, 0.617754130]) # x.y,z + rx,ry,rz
 
     ### run
     while True:
@@ -272,7 +294,7 @@ def run():
         ### normal
         actions_norm, actions_coef = normalize_action(actions_raw, means, stds)
         print_2d_arr('[INFO] robot action | raw | norm : ', actions_norm)
-        print_2d_arr('[INFO] robot action | raw | coef : ', actions_coef)
+        # print_2d_arr('[INFO] robot action | raw | coef : ', actions_coef)
         # actions_shift = actions_raw * actions_coef
         # print_2d_arr('[INFO] robot action | raw | shift : ', actions_shift)
         
@@ -280,7 +302,7 @@ def run():
         robot_actions = postprocess_action(robot_state_euler, actions_raw) # raw or shift
         print_2d_arr('[INFO] robot state | euler | before : ', robot_state_euler)
         print_2d_arr('[INFO] robot action | euler : ', robot_actions)
-        robot_actions = curtail_duplicate_action(robot_actions)
+        robot_actions = curtail_similar_action(curtail_duplicate_action(robot_actions))
         print_2d_arr('[INFO] robot action | euler | curtailed :', robot_actions)
         
         ### get the command
