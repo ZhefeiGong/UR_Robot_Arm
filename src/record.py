@@ -11,9 +11,11 @@ from cv_bridge import CvBridge
 
 def run():
 
+    # 
+    root_output_path = "/home/robot/data_tmp/VIDEO"
+
     # Open the default camera (usually the first camera found, index 0)
     cap = cv2.VideoCapture(4, cv2.CAP_V4L2)
-
     if not cap.isOpened():
         print("Error: Could not open camera.")
         return
@@ -61,7 +63,7 @@ def run():
                 if not is_recording:
                     print("Start recording...")
                     is_recording = True
-                    filename = f"output_{record_count}.mp4"
+                    filename = f"{root_output_path}/output_{record_count}.mp4"
                     record_count += 1
                     out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'),fps,(desired_width, desired_height))
             if is_recording:

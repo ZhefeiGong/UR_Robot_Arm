@@ -13,8 +13,6 @@ from motion_commander import MotionCommander
 from joint_listener import JointStateListener
 from PIL import Image
 
-from vla_client_voice import VLAClient
-
 from utils import ask_confirmation
 from utils import euler_to_quaternion, quaternion_to_euler, format_state_array, action_to_command
 from utils import cartesian_linear_mapping, curtail_duplicate_action
@@ -64,91 +62,6 @@ def preprocess_state(joints, poses, action_blocked=0.0):
         robot_obs.append(pose)
     robot_obs.append(action_blocked) # x y z qx qy qz qw gripper_is_closed
     return robot_obs
-
-def postprocess_action(robot_state, actions):
-    """
-    @input : robot_state := 2d array, actions := 2d array
-    """
-    action_dim = 7
-    action_num = len(actions)
-    robot_state = deepcopy(robot_state[0])
-    robot_actions = []
-    for idx_num in range(action_num):
-
-        # for idx_dim in range(action_dim):
-        #     if idx_dim + 1 != action_dim:
-        #         robot_state[idx_dim] += actions[idx_num*action_dim + idx_dim]
-        #     else:
-        #         robot_state[idx_dim] = actions[idx_num*action_dim + idx_dim]            
-        #     # # rx build gap
-        #     # if robot_state[3] < -math.pi:
-        #     #     robot_state[3] = math.pi + (robot_state[3] + math.pi)
-        #     # elif robot_state[3] >= math.pi:
-        #     #     robot_state[3] = -math.pi + (robot_state[3] - math.pi)
-        #     # # ry build gap
-        #     # if robot_state[4] < -math.pi:
-        #     #     robot_state[4] = math.pi + (robot_state[4] + math.pi)
-        #     # elif robot_state[4] >= math.pi:
-        #     #     robot_state[4] = -math.pi + (robot_state[4] - math.pi)
-        #     # # rz build gap
-        #     # if robot_state[5] < -math.pi:
-        #     #     robot_state[5] = math.pi + (robot_state[5] + math.pi)
-        #     # elif robot_state[5] >= math.pi:
-        #     #     robot_state[5] = -math.pi + (robot_state[5] - math.pi)
-        
-        ### update
-        robot_state[:6] += actions[idx_num,:6]
-        robot_state[6] = actions[idx_num,6]
-
-        ### build the [-pi ~ pi] gap | rx,ry,rz
-        for i in range(3,6):
-            if robot_state[i] < -math.pi:
-                robot_state[i] = math.pi + (robot_state[i] + math.pi)
-            elif robot_state[i] >= math.pi:
-                robot_state[i] = -math.pi + (robot_state[i] - math.pi)
-        
-        ### update
-        robot_actions.append(deepcopy(robot_state))
-
-    robot_actions = np.stack(robot_actions, axis=0)
-    return robot_actions
-
-def process_npz(root_path):
-    """
-    """
-    from PIL import Image
-    max_num = 24
-    actions = list()
-    print(np.load(f"{root_path}/auto_lang_ann.npy", allow_pickle=True))
-    for i in range(max_num):
-        formatted_num = str(i+1).zfill(7)
-        data_path = f"{root_path}/{formatted_num}.npz"
-        data = np.load(data_path)
-        rel_actions = data['rel_actions']
-        rgb_static = data['rgb_static']
-        rgb_gripper = data['rgb_gripper']
-        robot_obs = data['robot_obs']
-        print(rel_actions)
-        actions.append(rel_actions)
-        # print("arrays :", data.files)
-        # print(rel_actions.shape)
-        # print(rgb_static.shape)
-        # print(rgb_gripper.shape)
-        # print(robot_obs.shape)
-        # import cv2
-        # cv2.imwrite('/home/robot/rgb_static.jpg', rgb_static) # save in bgr order
-        # cv2.imwrite('/home/robot/rgb_gripper.jpg', rgb_gripper) # save in bgr order
-
-        # rgb_static_img = Image.fromarray(rgb_static)
-        # rgb_gripper_img = Image.fromarray(rgb_gripper)
-        # rgb_static_img.save(f'{root_path}/image/rgb_static_{formatted_num}.png') # save in rgb order
-        # rgb_gripper_img.save(f'{root_path}/image/rgb_gripper_{formatted_num}.png') # save in rgb order
-    # actions_arr = np.array(actions)
-    # np.savez(f"{root_path}/actions.npz", actions = actions_arr)
-
-def get_process_actions(path='/home/robot/data_tmp/training_test/actions.npz'):
-    data = np.load(path)
-    return data['actions']
 
 def print_2d_arr(info,actions):
     """"""
@@ -203,51 +116,22 @@ def run():
     
     ### initialization
     rospy.init_node("inference")
+
     motion_client = MotionCommander()
     joint_subscriber = JointStateListener()
     scene_image_subscriber = SceneSubscriber()
     wrist_image_subscriber = WristSubscriber()
 
     ### get the initial image
-    ask_confirmation(prompt="we'll start the client to recieve the msg from VLA")
-    vla_client = VLAClient(host="192.168.2.8", port=5050)
-    
-    ### 
-    # goal = "pick up the red cup for me"
-    goal = list(["pick up my cup", "1089", "I have a red cup"])
-    """
-    put the smaller green bowl into the grey bowl | put the smaller blue bowl into the grey bowl
-    take the tiger out of the red bowl and put it in the green bowl
-    pick up the blue cup for me | pick up the green cup for me | pick up the red cup for me
-    """
-
     scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/scene.jpg"
     wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/wrist.jpg"
-    
+
+
     if_ask_confirmation= True
 
-    ###@test@
-    # img_idx = 1 #@test@
-    # root_path = '/home/robot/data_tmp/training_test' #@test@
-
-    ### whole | before
-    # stds = np.array([0.02039579, 0.01705823, 0.02590469, 0.01555712, 0.01804757, 0.02337257, 0.49995958]) # x.y,z + rx,ry,rz
-    # means = np.array([0.00245544, -0.00174869, -0.00113085, 0.0006589, 0.00253147, 0.00102762, 0.50635778]) # x.y,z + rx,ry,rz
-
-    # ### bowl
-    # stds = np.array([0.01867459, 0.01744776, 0.03160221, 0.01219993, 0.00723566, 0.01521696, 0.49887265]) # x.y,z + rx,ry,rz
-    # means = np.array([-2.82607529e-04, 4.61128253e-04, -1.89281170e-03, 4.17868941e-04, -2.03441399e-04, 1.17789528e-04, 4.66442953e-01]) # x.y,z + rx,ry,rz
-    
-    ### cup
-    stds = np.array([0.01868538, 0.01550688, 0.01875742, 0.01216158, 0.02432358, 0.0169647, 0.48593617]) # x.y,z + rx,ry,rz
-    means = np.array([0.00693141926, -0.00491794886, -0.00109596073, 0.0000473991865, 0.00830309429, 0.00255002412, 0.617754130]) # x.y,z + rx,ry,rz
 
     ### run
     while True:
-        
-        # #@test@
-        # if img_idx > 24:
-        #     break
         
         ### get the initial image
         if if_ask_confirmation: ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
