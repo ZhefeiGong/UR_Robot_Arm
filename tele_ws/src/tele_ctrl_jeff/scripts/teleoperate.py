@@ -15,13 +15,13 @@ from space_mouse import SpaceMouse
 from utils import axis_to_euler,axis_to_quat
 
 # define robot parameters
-ROBOT_HOST = "192.168.2.6"
+ROBOT_HOST = "192.168.2.4"
 
 GP_OPEN = 0
 GP_CLOSE = 1
 
 def run():
-
+    
     ## Node
     rospy.init_node('robot_info_publisher_node', anonymous=True)
 

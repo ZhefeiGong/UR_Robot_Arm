@@ -23,13 +23,13 @@ def image_publisher(camera_id=2):
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
 
     ### EXPOSURE
-    # auto
-    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
-    # # manual
-    # exposure = -2.5
-    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
-    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
-    # cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+    # # auto
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+    # manual
+    exposure = -5.5
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
+    cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
 
 
     if not cap.isOpened():
@@ -88,14 +88,14 @@ def test():
     print(f"Current resolution: {int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}")
     
     ### EXPOSURE
-    # auto
-    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
-    # # manual
-    # exposure = -2.5
-    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
-    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
-    # cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
-    # print(f"Desired exposure: {cap.get(cv2.CAP_PROP_EXPOSURE)}")
+    # # auto
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+    # manual
+    exposure = -5.5
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
+    cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+    print(f"Desired exposure: {cap.get(cv2.CAP_PROP_EXPOSURE)}")
     
     time.sleep(2)
 

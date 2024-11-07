@@ -163,6 +163,11 @@ catkin_install_python(PROGRAMS
   scripts/scene_camera.py
   scripts/wrist_camera.py
   scripts/data_collect.py
+  scripts/cap_client.py
+  scripts/inference.py
+  scripts/space_mouse.py
+  scripts/utils.py
+  scripts/robotiq_gripper.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
