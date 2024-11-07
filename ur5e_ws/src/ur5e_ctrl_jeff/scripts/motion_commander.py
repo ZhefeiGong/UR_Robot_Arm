@@ -625,7 +625,7 @@ if __name__ == "__main__":
             geometry_msgs.Quaternion(x=-0.3538287, y=-0.9337961, z=0.0413521, w=0.0334666)
         ),
     ]
-    duration_list = [8.0]
+    duration_list = [20.0]
     grip_list = [0]
     client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list)
 
@@ -635,7 +635,6 @@ if __name__ == "__main__":
     # print(state)
     # print(state_euler)
 
-    
     # raise ValueError(
     #     "I only understand types 'joint_based' and 'cartesian', but got '{}'".format(
     #         trajectory_type

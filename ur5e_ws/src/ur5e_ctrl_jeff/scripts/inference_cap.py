@@ -13,20 +13,17 @@ from motion_commander import MotionCommander
 from joint_listener import JointStateListener
 from PIL import Image
 
-from utils import ask_confirmation
-from utils import euler_to_quaternion, quaternion_to_euler, format_state_array, action_to_command
-from utils import cartesian_linear_mapping, curtail_duplicate_action
+from utils import ask_confirmation, action_to_command
+
+# from utils import euler_to_quaternion, quaternion_to_euler, format_state_array
+# from utils import cartesian_linear_mapping, curtail_duplicate_action
+# import json
+# from std_srvs.srv import Trigger, TriggerRequest
 
 from wrist_camera import WristSubscriber
 from scene_camera import SceneSubscriber
 
-"""
-joint0 joint1 joint2 joint3 joint4 joint5 x y z qx qy qz qw gripper_is_closed action_blocked
-
-x <-> [-0.70,0.00]
-y <-> [-0.70,0.00]
-z <-> [0.20,0.68]
-"""
+from cap_client import CAPClient
 
 if sys.version_info[0] < 3:
     """ 
@@ -34,37 +31,10 @@ if sys.version_info[0] < 3:
     """
     input = raw_input
 
-def preprocess_image(scene_Image, wrist_Image):
-    """
-    @func : 
-    """
-    # scene
-    scene_Image = scene_Image.convert("RGB")
-    b,g,r = scene_Image.split()
-    scene_Image = Image.merge("RGB", (r,g,b))
-    scene_Image = scene_Image.transpose(Image.ROTATE_180)
-    # wrist
-    wrist_Image = wrist_Image.convert("RGB")
-    b,g,r = wrist_Image.split()
-    wrist_Image = Image.merge("RGB", (r,g,b)) # berkeleyur5-bgr
-    # wrist_Image = wrist_Image.transpose(Image.ROTATE_180) # berkeleyur5-rotate
-
-    return scene_Image, wrist_Image
-
-def preprocess_state(joints, poses, action_blocked=0.0):
-    """
-    @func : 
-    """
-    robot_obs=[]
-    for joint in joints:
-        robot_obs.append(joint) # joint0 joint1 joint2 joint3 joint4 joint5
-    for pose in poses:
-        robot_obs.append(pose)
-    robot_obs.append(action_blocked) # x y z qx qy qz qw gripper_is_closed
-    return robot_obs
-
 def print_2d_arr(info,actions):
-    """"""
+    """
+    @fun :
+    """
     print(info)
     for row in actions: 
         print('[', end="")
@@ -74,144 +44,121 @@ def print_2d_arr(info,actions):
         print(']')
     return
 
-def normalize_action(actions, means, stds):
+def preprocess_image(scene_image, wrist_image, resize_width=160, resize_height=120):
     """
-    @input : actions:=2d array, mean:=1d array, stds:=1d array
-    @func : 1.2450980
+    Preprocess scene and wrist images by resizing, rotating, and formatting as numpy arrays.
+    Args:
+        scene_image (PIL.Image): Image from the scene camera.
+        wrist_image (PIL.Image): Image from the wrist camera.
+        resize_width (int): Width to resize the image.
+        resize_height (int): Height to resize the image.
+    Returns:
+        tuple: Preprocessed scene and wrist images as numpy arrays with shape (H, W, C).
     """
-    cratera = 1.0
-    thred_s = 1.75
-    thred_m = 2.25
-    actions_norm = (actions-means)/stds # [(n,7)-(7,)]/(7,) = (n,7)
-    actions_coef = np.ones(actions_norm.shape,actions_norm.dtype)
-    ### 
-    pos = abs(actions_norm[:,:6])>cratera
-    actions_coef[:, :6][pos]=deepcopy(abs(actions_norm[:, :6])[pos])
-    ### thred
-    # actions_coef[:, 0:2][actions_coef[:, 0:2]>thred_s]=thred_s
-    # actions_coef[:, 2][actions_coef[:, 2]>thred_m]=thred_m
-    # actions_coef[:, 3:][actions_coef[:, 3:]>thred_s]=thred_s
-
-    return actions_norm, actions_coef
-
-def curtail_similar_action(action_arrary):
-    """
-    cut off the same action compared with the former one
-    @action_arrary has shape : [n,7]
-    """
-
-    cur_action_arrary = [action_arrary[0]]
-    crateria = 0.0001
-    for idx in range(1, action_arrary.shape[0]):
-        dis = np.linalg.norm(action_arrary[idx]-action_arrary[idx-1])
-        if dis > crateria:
-            cur_action_arrary.append(action_arrary[idx])
+    # Preprocess scene image
+    scene_image = scene_image.convert("RGB")
+    scene_image = scene_image.transpose(Image.ROTATE_180)               # Rotate by 180 degrees if necessary
+    scene_image = scene_image.resize((resize_width, resize_height))     # Resize to desired dimensions
+    scene_image = np.array(scene_image)                                 # Convert to numpy array with shape (H, W, C)
+    scene_image = cv2.cvtColor(scene_image, cv2.COLOR_BGR2RGB)          # to RGb
     
-    return np.array(cur_action_arrary)
+    # Preprocess wrist image
+    wrist_image = wrist_image.convert("RGB")
+    wrist_image = wrist_image.resize((resize_width, resize_height))     # Resize to desired dimensions
+    wrist_image = np.array(wrist_image)                                 # Convert to numpy array with shape (H, W, C)
+    wrist_image = cv2.cvtColor(wrist_image, cv2.COLOR_BGR2RGB)          # to RGB
+
+    return scene_image, wrist_image
+
 
 def run():
     """
     @func : run the whole process
     """
-    
+
     ### initialization
     rospy.init_node("inference")
 
+    ### nodes
     motion_client = MotionCommander()
     joint_subscriber = JointStateListener()
     scene_image_subscriber = SceneSubscriber()
     wrist_image_subscriber = WristSubscriber()
+    policy_client = CAPClient()
 
-    ### get the initial image
-    scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/scene.jpg"
-    wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/voice/wrist.jpg"
-
-
-    if_ask_confirmation= True
-
+    ### params
+    scene_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/cap/scene.jpg"
+    wrist_pth = "/home/robot/UR_Robot_Arm/ur5e_ws/src/ur5e_ctrl_jeff/img/cap/wrist.jpg"
+    is_ask_confirmation = True
+    is_image_save = True
 
     ### run
     while True:
         
-        ### get the initial image
-        if if_ask_confirmation: ask_confirmation(prompt="we'll capture the image of the scene and wrist...")
+        if is_ask_confirmation: 
+            ask_confirmation(prompt="we'll catch the current images of the scene and wrist...")
+        
+        # Capture and preprocess images
         scene_cur_image = Image.fromarray(scene_image_subscriber.get_current_image())
         wrist_cur_image = Image.fromarray(wrist_image_subscriber.get_current_image())
-        scene_cur_image,wrist_cur_image = preprocess_image(scene_cur_image,wrist_cur_image)
-        scene_cur_image.save(scene_pth)
-        wrist_cur_image.save(wrist_pth)
-        
-        # #@test@
-        # formatted_num = str(img_idx).zfill(7)
-        # data_path = f"{root_path}/{formatted_num}.npz"
-        # print(data_path)
-        # data = np.load(data_path)
-        # rgb_static = data['rgb_static']
-        # rgb_gripper = data['rgb_gripper']
-        # rgb_static_img = Image.fromarray(rgb_static)
-        # rgb_gripper_img = Image.fromarray(rgb_gripper)
-        # rgb_static_img.save(scene_pth) # save in rgb order
-        # rgb_gripper_img.save(wrist_pth) # save in rgb order
+        scene_img_arr, wrist_img_arr = preprocess_image(scene_cur_image, wrist_cur_image)
+
+        # Save images if required
+        if is_image_save:
+            Image.fromarray(scene_img_arr).save(scene_pth) # [H,W,3]
+            Image.fromarray(wrist_img_arr).save(wrist_pth) # [H,W,3]
         
         ### get the robot state
-        if if_ask_confirmation: ask_confirmation(prompt="we'll build the current state of the robot...")
-        robot_state = motion_client.get_state() # [1,7]
-        robot_state_euler = quaternion_to_euler(robot_state) # [1,6]
+        if is_ask_confirmation: ask_confirmation(prompt="we'll catch the current state of the robot...")
+        robot_state = motion_client.get_state() # [1,7] | xyz,xyzw,g
         print_2d_arr('[INFO] robot state | quat : ', robot_state)
-        print_2d_arr('[INFO] robot state | euler : ', robot_state_euler)
-        robot_state = list(robot_state[0]) # [7,]
-        robot_joint = np.array([joint_subscriber.get_joint_states('position')]) # [1,6]
-        print_2d_arr('[INFO] robot joint : ', robot_joint)
-        robot_joint = list(robot_joint[0]) # [6,]
-        # robot_joint = list([0.0,0.0,0.0,0.0,0.0,0.0])#@test@
-        robot_obs = preprocess_state(joints=robot_joint,poses=robot_state) # [15,]
-        print_2d_arr('[INFO] robot obs : ', [robot_obs])
-        
-        ### get the actions
-        if if_ask_confirmation: ask_confirmation(prompt="we'll recieve the actions from model...")
-        actions = vla_client.predict_traj(goal=goal,robot_obs=robot_obs,scene_pth=scene_pth,wrist_pth=wrist_pth)
-        actions_raw = np.array(actions).reshape(-1,7)
-        # actions = np.array(get_process_actions()).reshape(-1,7) #@test@ 
-        print_2d_arr('[INFO] robot action | raw : ', actions_raw)
+        obs=dict()
+        obs['robot0_eef_pos'] = np.array(robot_state[0][:3])[None,None,...]         # [3,] -> [1,1,3,]
+        obs['robot0_eef_quat'] = np.array(robot_state[0][3:7])[None,None,...]       # [4,] -> [1,1,4,]
+        obs['robot0_gripper_qpos'] = np.array(robot_state[0][-1:])[None,None,...]   # [1,] -> [1,1,1,]
+        obs['robot0_eye_in_hand_image'] = wrist_img_arr[None,None,...]              # [H,W,3] -> [1,1,H,W,3]
+        obs['agentview_image'] = scene_img_arr[None,None,...]                       # [H,W,3] -> [1,1,H,W,3]
 
-        ### normal
-        actions_norm, actions_coef = normalize_action(actions_raw, means, stds)
-        print_2d_arr('[INFO] robot action | raw | norm : ', actions_norm)
-        # print_2d_arr('[INFO] robot action | raw | coef : ', actions_coef)
-        # actions_shift = actions_raw * actions_coef
-        # print_2d_arr('[INFO] robot action | raw | shift : ', actions_shift)
-        
-        ### get obs actions
-        robot_actions = postprocess_action(robot_state_euler, actions_raw) # raw or shift
-        print_2d_arr('[INFO] robot state | euler | before : ', robot_state_euler)
-        print_2d_arr('[INFO] robot action | euler : ', robot_actions)
-        robot_actions = curtail_similar_action(curtail_duplicate_action(robot_actions))
-        print_2d_arr('[INFO] robot action | euler | curtailed :', robot_actions)
+        # ### standard
+        # def image_format_amend(img_pth, RESIZE_WIDTH = 160, RESIZE_HEIGHT = 120):
+        #     image = cv2.imread(img_pth)                                 # BGR
+        #     image = cv2.resize(image, (RESIZE_WIDTH, RESIZE_HEIGHT))    # BGR | (480，640，3) -> (RESIZE_HEIGHT, RESIZE_WIDTH, 3)
+        #     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)          # RGB               # 
+        #     image_arr = np.array(image_rgb)                             # BHWC | [0,255]
+        #     return image_arr
+        # def given_data():
+        #     obs=dict()
+        #     obs['agentview_image'] = image_format_amend("/home/robot/UR_Robot_Arm/coarse2fine/data/scene1.jpg")[None,None,...]
+        #     obs['robot0_eye_in_hand_image'] = image_format_amend("/home/robot/UR_Robot_Arm/coarse2fine/data/wrist1.jpg")[None,None,...]
+        #     obs['robot0_eef_pos'] = np.array([-0.36229283359785835,-0.4150547746810219,0.4619846199476397])[None,None,...]
+        #     obs['robot0_eef_quat'] = np.array([0.4246134752330147, 0.9042700809168371, -0.01994586432104633, 0.04001474610297329,])[None,None,...]
+        #     obs['robot0_gripper_qpos'] = np.array([0.0])[None,None,...]
+        #     return obs
+        # obs = given_data()
+
+        ### get the actions
+        if is_ask_confirmation: ask_confirmation(prompt="we'll send the observation from model...")
+        actions_pred = policy_client.predict_traj(obs)
+        actions_pred = np.array(actions_pred).reshape(-1,8)         # [H,D] | pos(3) + rot(4) + grip(1)
+        print_2d_arr('[INFO] robot action | raw : ', actions_pred)
         
         ### get the command
-        if if_ask_confirmation: ask_confirmation(prompt="we'll converse the instruction...")
-        action_arrary_quaternion = euler_to_quaternion(robot_actions)
-        pose_list, grip_list, duration_list = action_to_command(action_arrary_quaternion, first_duration=3, duration=3)
+        if is_ask_confirmation: ask_confirmation(prompt="we'll converse the instruction...")
+        # action_arrary_quaternion = euler_to_quaternion(robot_actions)
+        pose_list, grip_list, duration_list = action_to_command(actions_pred, first_duration=5, duration=5)
+        
+        # pose_list=[pose_list[0]]
+        # grip_list=[grip_list[0]]
+        # duration_list=[duration_list[0]]
+        
         print('[INFO] robot action | pose : \n',pose_list)
         print('[INFO] robot action | gripper : \n',grip_list)
         print('[INFO] robot action | duration : \n',duration_list)
         
         ### run
-        if if_ask_confirmation: ask_confirmation(prompt="we'll execute the trajectory...")
+        if is_ask_confirmation: ask_confirmation(prompt="we'll execute the trajectory...")
         motion_client.execute_arm_gripper_trajectory(pose_list, grip_list, duration_list, is_ask_conf=False)
         
-        # img_idx += 5 #@test@
         
 if __name__ == "__main__":
     run()
-    # root_path = '/home/robot/data_tmp/training_test'
-    # process_npz(root_path)
-
-
-"""
-🌟 category :
-1. Take the tiger out of the red bowl and put it in the grey bowl.
-2. Sweep the green cloth to the left side of the table.
-3. Pick up the blue cup and put it into the brown cup.
-4. Put the ranch bottle into the pot.    
-"""

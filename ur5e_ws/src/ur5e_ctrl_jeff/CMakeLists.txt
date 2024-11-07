@@ -166,6 +166,7 @@ catkin_install_python(PROGRAMS
   scripts/gripper_listener.py
   scripts/inference_reflect.py
   scripts/inference_voice.py
+  scripts/inference_cap.py
   scripts/joint_listener.py
   scripts/motion_commander.py
   scripts/realsense_camera.py
@@ -173,6 +174,7 @@ catkin_install_python(PROGRAMS
   scripts/utils.py
   scripts/vla_client_reflect.py
   scripts/vla_client_voice.py
+  scripts/cap_client.py
   scripts/wrist_camera.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

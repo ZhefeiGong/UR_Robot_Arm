@@ -209,6 +209,7 @@ class VQVAE(nn.Module):
             if f'quantizers.{i}.ema_vocab_hit_SV' in state_dict and state_dict[f'quantizers.{i}.ema_vocab_hit_SV'].shape[0] != self.quantizers[i].ema_vocab_hit_SV.shape[0]:
                 state_dict[f'quantizers.{i}.ema_vocab_hit_SV'] = self.quantizers[i].ema_vocab_hit_SV
         return super().load_state_dict(state_dict=state_dict, strict=strict, assign=assign) # assign=assign | for pytorch >= 2.1.0
+        # return super().load_state_dict(state_dict=state_dict, strict=strict) # assign=assign | for pytorch >= 2.1.0
     
     def load_state_dict_sep(self, state_dict: Dict[str, Any], act_dim=0, strict=False, assign=False, using_znorm=False):
         """
@@ -237,4 +238,5 @@ class VQVAE(nn.Module):
             state_dict[f'quantizers.{act_dim}.ema_vocab_hit_SV'] = self.quantizers[act_dim].ema_vocab_hit_SV
         # load | return
         return super().load_state_dict(state_dict=state_dict, strict=strict, assign=assign) # assign=assign | for pytorch >= 2.1.0
+        # return super().load_state_dict(state_dict=state_dict, strict=strict) # assign=assign | for pytorch >= 2.1.0
         
