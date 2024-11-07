@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from vqvae.vqvae import VQVAE
 from autoreg.basic_var import AdaLNBeforeHead, AdaLNSelfAttn
-from roboenv.pytorch_util import dict_apply
+from utils.pytorch_util import dict_apply
 
 class SharedAdaLin(nn.Linear):
     """
@@ -105,8 +105,8 @@ class VAR(nn.Module):
         ])
         print(
             f'[VAR-config ] embed_dim={embed_dim}, num_heads={num_heads}, depth={depth}, mlp_ratio={mlp_ratio}\n'
-            f'[VAR-drop ratios ] drop_rate={drop_rate}, attn_drop_rate={attn_drop_rate}, drop_path_rate={drop_path_rate:g} ({torch.linspace(0, drop_path_rate, depth)})\n',
-            end='\n\n', 
+            f'[VAR-drop ] drop_rate={drop_rate}, attn_drop_rate={attn_drop_rate}, drop_path_rate={drop_path_rate:g} ({torch.linspace(0, drop_path_rate, depth)})\n',
+            end='', 
             flush=True
         )
         
@@ -242,7 +242,7 @@ class VAR(nn.Module):
         :func: initialize the weights
         """
         if init_std < 0: init_std = (1 / self.C / 3) ** 0.5     # init_std < 0: automated
-        print(f'[init_weights] {type(self).__name__} with {init_std=:g}')
+        print(f'[VAR-initweight] {type(self).__name__} with {init_std=:g}')
         
         for m in self.modules():
             

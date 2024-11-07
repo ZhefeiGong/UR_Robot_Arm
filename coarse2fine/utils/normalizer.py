@@ -1,12 +1,13 @@
 from typing import Union, Dict
-
 import unittest
 import zarr
 import numpy as np
 import torch
 import torch.nn as nn
-from .pytorch_util import dict_apply
-from .dict_of_tensor_mixin import DictOfTensorMixin
+
+from utils.pytorch_util import dict_apply
+from utils.dict_of_tensor_mixin import DictOfTensorMixin
+
 
 class LinearNormalizer(DictOfTensorMixin):
     avaliable_modes = ['limits', 'gaussian']
@@ -80,7 +81,6 @@ class LinearNormalizer(DictOfTensorMixin):
             if key != '_default':
                 result[key] = value['input_stats']
         return result
-
 
     def get_output_stats(self, key='_default'):
         input_stats = self.get_input_stats()
@@ -161,9 +161,11 @@ class SingleFieldLinearNormalizer(DictOfTensorMixin):
         }
         return cls.create_manual(scale, offset, input_stats_dict)
 
+    # 🔥 How we normalize the raw distribution 🔥
     def normalize(self, x: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:
         return _normalize(x, self.params_dict, forward=True)
 
+    # 🔥 How we normalize the raw distribution 🔥
     def unnormalize(self, x: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:
         return _normalize(x, self.params_dict, forward=False)
 
@@ -259,8 +261,8 @@ def _fit(data: Union[torch.Tensor, np.ndarray, zarr.Array],
         p.requires_grad_(False)
     return this_params
 
-
-def _normalize(x, params, forward=True):
+# 🔥 How we normalize the raw distribution 🔥
+def _normalize(x, params, forward=True, scale_min=-1.0, scale_max=1.0):
     assert 'scale' in params
     if isinstance(x, np.ndarray):
         x = torch.from_numpy(x)
@@ -270,13 +272,18 @@ def _normalize(x, params, forward=True):
     src_shape = x.shape
     x = x.reshape(-1, scale.shape[0])
     if forward:
+        # scale
         x = x * scale + offset
+        # 🔥 crop to [scale_min, scale_max] based on scale dtype 🔥
+        scale_min = torch.tensor(scale_min, dtype=scale.dtype, device=scale.device)
+        scale_max = torch.tensor(scale_max, dtype=scale.dtype, device=scale.device)
+        x = torch.clamp(x, min=scale_min.item(), max=scale_max.item())
     else:
+        # inverse-scale
         x = (x - offset) / scale
     x = x.reshape(src_shape)
     return x
-
-
+    
 def test():
     data = torch.zeros((100,10,9,2)).uniform_()
     data[...,0,0] = 0
