@@ -12,10 +12,11 @@ from cv_bridge import CvBridge
 def run():
 
     # 
-    root_output_path = "/home/robot/data_tmp/VIDEO"
+    record_count = 0
+    root_output_path = "/home/robot/temp/VIDEO/CARP/bowl"
 
     # Open the default camera (usually the first camera found, index 0)
-    cap = cv2.VideoCapture(4, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(5, cv2.CAP_V4L2)
     if not cap.isOpened():
         print("Error: Could not open camera.")
         return
@@ -50,7 +51,6 @@ def run():
     
     is_recording = False
     out = None
-    record_count = 0
     blank_image = np.zeros((500,500,3),np.uint8)
     
     # run
@@ -80,6 +80,7 @@ def run():
     cap.release()
     cv2.destroyAllWindows()
 
-
 if __name__ == "__main__":
     run()
+
+    

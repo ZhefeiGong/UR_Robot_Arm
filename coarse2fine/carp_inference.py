@@ -4,6 +4,7 @@ import os
 import cv2
 import math
 import h5py
+import json
 import random
 import os.path as osp
 import torch, torchvision
@@ -14,12 +15,12 @@ setattr(torch.nn.Linear, 'reset_parameters', lambda self: None)     # disable de
 setattr(torch.nn.LayerNorm, 'reset_parameters', lambda self: None)  # disable default parameter init for faster speed
 import matplotlib.pyplot as plt
 from autoreg import build_vae_var
-from utils.pytorch_util import dict_apply
-from utils.inference_util import load_shape_meta, load_obs_encoder
-from utils.normalizer import LinearNormalizer
+from carp_utils.pytorch_util import dict_apply
+from carp_utils.inference_util import load_shape_meta, load_obs_encoder
+from carp_utils.normalizer import LinearNormalizer
 
 ### rotation
-from utils.rotation_transformer import RotationTransformer
+from carp_utils.rotation_transformer import RotationTransformer
 rotation_transformer = RotationTransformer(from_rep='quaternion', to_rep='rotation_6d', from_convention=None, to_convention=None)
 
 ### build everything
@@ -172,19 +173,36 @@ def image_format_amend(img_pth, RESIZE_WIDTH = 160, RESIZE_HEIGHT = 120):
     image_arr = np.array(image_rgb)                             # BHWC | [0,255]
     return image_arr
 
+# def obs_format_amend(obs):
+#     rgb_keys = ["agentview_image", "robot0_eye_in_hand_image"]
+#     lowdim_keys = ["robot0_eef_pos", "robot0_eef_quat", "robot0_gripper_qpos"]
+#     for key in rgb_keys:
+#         # 🔥 Move channel last to channel first 🔥
+#         # B,T,H,W,C -> B,T,C,H,W | convert uint8 image to float32
+#         obs[key] = np.moveaxis(obs[key],-1,2).astype(np.float32) / 255.
+#     for key in lowdim_keys:
+#         obs[key] = obs[key][:].astype(np.float32)
+#         # 🔥 Quat to Rotation6d 🔥
+#         if key == "robot0_eef_quat":
+#             obs[key] = obs[key][..., [3, 0, 1, 2]]                    # xyzw(ori) -> wxyz(pt3d)
+#             obs[key] = rotation_transformer.forward(obs[key])         # quat -> rotation6d
+#         # 🔥 Grip to (-1,1) 🔥
+#         elif key == "robot0_gripper_qpos":
+#             obs[key] = obs[key]*2-1                                       # [0,1](ori) -> [-1,1]
+#             # assert (max(obs[key]) == 1.0) and (min(obs[key]) == -1.0)     # make sure it's belong to [-1,1]
+#     return obs
+
 def obs_format_amend(obs):
     rgb_keys = ["agentview_image", "robot0_eye_in_hand_image"]
     lowdim_keys = ["robot0_eef_pos", "robot0_eef_quat", "robot0_gripper_qpos"]
     for key in rgb_keys:
-        # move channel last to channel first
-        # B,T,H,W,C -> B,T,C,H,W
-        # convert uint8 image to float32
+        # 🔥 Move channel last to channel first 🔥
+        # B,T,H,W,C -> B,T,C,H,W | convert uint8 image to float32
         obs[key] = np.moveaxis(obs[key],-1,2).astype(np.float32) / 255.
     for key in lowdim_keys:
         obs[key] = obs[key][:].astype(np.float32)
     return obs
-
-
+    
 def print_2d_arr(info,actions):
     """
     @fun :
@@ -233,7 +251,18 @@ if __name__ == "__main__":
 [-0.3622928 -0.4150547 0.4619846 0.4246134 0.9042700 -0.0199458 0.0400147 0.0]
 """
 
+""" CARP(current)
+[-0.3612558 -0.4116496 0.4635365 0.4243457 0.9043154 -0.0204264 0.0415581 -1.0199691 ]
+[-0.3689657 -0.4083814 0.4725467 0.4250512 0.9040264 -0.0215426 0.0400445 -0.9833924 ]
+[-0.3609210 -0.4115919 0.4641589 0.4241956 0.9044364 -0.0207756 0.0402632 -1.0038750 ]
+[-0.3586527 -0.4072773 0.4648821 0.4244998 0.9042478 -0.0197792 0.0417681 -1.0002413 ]
+[-0.3513922 -0.4171208 0.4682400 0.4248604 0.9040995 -0.0210168 0.0406935 -0.9953830 ]
+[-0.3491384 -0.4118931 0.4661402 0.4246114 0.9042003 -0.0197700 0.0416655 -0.9916106 ]
+[-0.3537332 -0.3945919 0.4685365 0.4256597 0.9037417 -0.0199844 0.0408102 -0.9989278 ]
+[-0.3633390 -0.3803273 0.4645104 0.4255653 0.9037117 -0.0193043 0.0427394 -0.9981372 ]
 """
+
+""" CARP(before)
 [-0.3641393 -0.4166141 0.4482937 0.4243543 0.9043197 -0.0202377 0.0414696 -1.0199691 ]
 [-0.3681723 -0.4092316 0.4593124 0.4250602 0.9040313 -0.0213388 0.0399486 -0.9833924 ]
 [-0.3617996 -0.4100017 0.4545057 0.4242024 0.9044400 -0.0206207 0.0401906 -1.0038750 ]
@@ -241,17 +270,5 @@ if __name__ == "__main__":
 [-0.3504641 -0.4056237 0.4555535 0.4248687 0.9041038 -0.0208324 0.0406069 -0.9953830 ]
 [-0.3521069 -0.3949804 0.4535229 0.4246165 0.9042028 -0.0196591 0.0416135 -0.9916106 ]
 [-0.3598781 -0.3744820 0.4584403 0.4256662 0.9037449 -0.0198403 0.0407423 -0.9989278 ]
-[-0.3756610 -0.3590542 0.4582780 0.4255756 0.9037163 -0.0190873 0.0426372 -0.9981372 ]
-"""
-
-
-"""
-[-0.3641393 -0.4166141 0.4482937 0.4243543 0.9043197 -0.0202377 0.0414696 -1.0199691 ]
-[-0.3681722 -0.4092316 0.4593124 0.4250603 0.9040312 -0.0213388 0.0399486 -0.9833924 ]
-[-0.3617996 -0.4100017 0.4545057 0.4242025 0.9044400 -0.0206207 0.0401906 -1.0038750 ]
-[-0.3588532 -0.4029518 0.4525110 0.4245056 0.9042506 -0.0196520 0.0417083 -1.0002413 ]
-[-0.3504641 -0.4056237 0.4555535 0.4248687 0.9041038 -0.0208324 0.0406069 -0.9953830 ]
-[-0.3521069 -0.3949804 0.4535229 0.4246165 0.9042028 -0.0196591 0.0416135 -0.9916106 ]
-[-0.3598782 -0.3744820 0.4584403 0.4256662 0.9037449 -0.0198403 0.0407423 -0.9989278 ]
 [-0.3756610 -0.3590542 0.4582780 0.4255756 0.9037163 -0.0190873 0.0426372 -0.9981372 ]
 """

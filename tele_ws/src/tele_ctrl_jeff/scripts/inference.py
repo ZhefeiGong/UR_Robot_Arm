@@ -23,23 +23,57 @@ from robotiq_gripper import RobotiqGripper
 from utils import axis_to_euler, axis_to_quat, quat_to_axis, euler_to_axis, ask_confirmation, preprocess_image, print_2d_arr
 from wrist_camera import WristSubscriber
 from scene_camera import SceneSubscriber
-from cap_client import CAPClient
+from policy_client import PolicyClient
 
 # define robot parameters
-ROBOT_HOST = "192.168.2.4"
+ROBOT_HOST = "192.168.2.6"
 GP_OPEN = 0
 GP_CLOSE = 1
 GP_CRITERIA = 0.5
-IS_VERBOSE = True
+IS_VERBOSE = False
+IS_CHECK = False
 IS_SAVE = True
 MOVE_SPEED = 0.01
 
-if sys.version_info[0] < 3:
+"""BOWL - 131
+blue -> red | grey
+green -> red | grey
+"""
+
+"""CUP- 134
+red
+blue
+green
+"""
+
+"""TIGER - 58
+red -> grey
+red -> green
+"""
+
+def image_format_amend(img_pth, RESIZE_WIDTH = 160, RESIZE_HEIGHT = 120):
+    image = cv2.imread(img_pth)                                 # BGR
+    image = cv2.resize(image, (RESIZE_WIDTH, RESIZE_HEIGHT))    # BGR | (480,640,3) -> (RESIZE_HEIGHT, RESIZE_WIDTH, 3)
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)          # RGB               # 
+    image_arr = np.array(image_rgb)                             # BHWC | [0,255]
+    return image_arr
+def given_data():
+    obs=dict()
+    obs['agentview_image'] = image_format_amend("/home/robot/UR_Robot_Arm/coarse2fine/data/scene1.jpg")[None,None,...]
+    obs['robot0_eye_in_hand_image'] = image_format_amend("/home/robot/UR_Robot_Arm/coarse2fine/data/wrist1.jpg")[None,None,...]
+    obs['robot0_eef_pos'] = np.array([-0.36229283359785835,-0.4150547746810219,0.4619846199476397])[None,None,...]
+    obs['robot0_eef_quat'] = np.array([0.4246134752330147, 0.9042700809168371, -0.01994586432104633, 0.04001474610297329,])[None,None,...]
+    obs['robot0_gripper_qpos'] = np.array([0.0])[None,None,...]
+    return obs
+
+# py3
+if sys.version_info[0] < 3: 
     """ 
     @func : compatibility for python2 and python3 
     """
     input = raw_input
 
+# run
 def run():
     """
     @func : run the whole process
@@ -51,7 +85,7 @@ def run():
     ### instances
     scene_image_subscriber = SceneSubscriber()
     wrist_image_subscriber = WristSubscriber()
-    policy_client = CAPClient()
+    policy_client = PolicyClient()
 
     ## RTDE
     print("[INFO] Starting RTDE...")
@@ -67,10 +101,10 @@ def run():
     print("[INFO] Activating gripper...")
     gripper.activate()
     gripper_status = GP_OPEN
-    
+
     ### params
-    scene_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/cap/scene.jpg"
-    wrist_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/cap/wrist.jpg"
+    scene_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/carp/scene.jpg"
+    wrist_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/carp/wrist.jpg"
 
     ### run
     while True:
@@ -97,12 +131,14 @@ def run():
         quat = axis_to_quat(axis_angle)
         print_2d_arr('[INFO] robot state | raw : ', np.array([[*cart,*quat]]))
 
+        ### build obs
         obs=dict()
+        obs['agentview_image'] = scene_img_arr[None,None,...]                       # [H,W,3] -> [1,1,H,W,3]
+        obs['robot0_eye_in_hand_image'] = wrist_img_arr[None,None,...]              # [H,W,3] -> [1,1,H,W,3]
         obs['robot0_eef_pos'] = np.array(cart)[None,None,...]                       # [3,] -> [1,1,3,]
         obs['robot0_eef_quat'] = np.array(quat)[None,None,...]                      # [4,] -> [1,1,4,]
         obs['robot0_gripper_qpos'] = np.array([gripper_status])[None,None,...]      # [1,] -> [1,1,1,]
-        obs['robot0_eye_in_hand_image'] = wrist_img_arr[None,None,...]              # [H,W,3] -> [1,1,H,W,3]
-        obs['agentview_image'] = scene_img_arr[None,None,...]                       # [H,W,3] -> [1,1,H,W,3]
+        # obs = given_data()
 
         ### get the actions
         if IS_VERBOSE: ask_confirmation(prompt="we'll send the observation from model...")
@@ -111,7 +147,7 @@ def run():
         print_2d_arr('[INFO] robot action | pred : ', actions_pred)
 
         ### run
-        if IS_VERBOSE: ask_confirmation(prompt="we'll execute the trajectory...")
+        if IS_CHECK: ask_confirmation(prompt="we'll execute the trajectory...")
         print('[INFO] robot action | exe')
         for action in actions_pred:
             ## move
@@ -143,4 +179,21 @@ if __name__ == "__main__":
 # print(euler_to_axis(axis_to_euler(axis)))
 # print(quat_to_axis(axis_to_quat(axis)))     
 # rtde_ctl.moveL(temp, speed=MOVE_SPEED)
+"""
+
+"""Garbage for test
+def image_format_amend(img_pth, RESIZE_WIDTH = 160, RESIZE_HEIGHT = 120):
+    image = cv2.imread(img_pth)                                 # BGR
+    image = cv2.resize(image, (RESIZE_WIDTH, RESIZE_HEIGHT))    # BGR | (480,640,3) -> (RESIZE_HEIGHT, RESIZE_WIDTH, 3)
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)          # RGB               # 
+    image_arr = np.array(image_rgb)                             # BHWC | [0,255]
+    return image_arr
+def given_data():
+    obs=dict()
+    obs['agentview_image'] = image_format_amend("/home/robot/UR_Robot_Arm/coarse2fine/data/scene1.jpg")[None,None,...]
+    obs['robot0_eye_in_hand_image'] = image_format_amend("/home/robot/UR_Robot_Arm/coarse2fine/data/wrist1.jpg")[None,None,...]
+    obs['robot0_eef_pos'] = np.array([-0.36229283359785835,-0.4150547746810219,0.4619846199476397])[None,None,...]
+    obs['robot0_eef_quat'] = np.array([0.4246134752330147, 0.9042700809168371, -0.01994586432104633, 0.04001474610297329,])[None,None,...]
+    obs['robot0_gripper_qpos'] = np.array([0.0])[None,None,...]
+    return obs
 """

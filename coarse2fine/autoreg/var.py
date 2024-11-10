@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from vqvae.vqvae import VQVAE
 from autoreg.basic_var import AdaLNBeforeHead, AdaLNSelfAttn
-from utils.pytorch_util import dict_apply
+from carp_utils.pytorch_util import dict_apply
 
 class SharedAdaLin(nn.Linear):
     """

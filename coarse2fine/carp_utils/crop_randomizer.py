@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision.transforms.functional as ttf
-import utils.tensor_util as tu
+import carp_utils.tensor_util as tu
 
 class CropRandomizer(nn.Module):
     """

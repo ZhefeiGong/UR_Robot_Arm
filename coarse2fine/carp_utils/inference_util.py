@@ -9,9 +9,9 @@ from robomimic.algo.algo import PolicyAlgo
 import robomimic.utils.obs_utils as ObsUtils
 import robomimic.models.base_nets as rmbn
 
-from utils.pytorch_util import replace_submodules
-from utils.robomimic_config_util import get_robomimic_config
-import utils.crop_randomizer as dmvc
+from carp_utils.pytorch_util import replace_submodules
+from carp_utils.robomimic_config_util import get_robomimic_config
+import carp_utils.crop_randomizer as dmvc
 
 def load_shape_meta():
     """
@@ -32,6 +32,7 @@ def load_shape_meta():
             },
             "robot0_eef_quat": {
                 "shape": [4]
+                # "shape": [6]
             },
             "robot0_eye_in_hand_image": {
                 # "shape": [3, 84, 84],
@@ -45,8 +46,6 @@ def load_shape_meta():
         }
     }
     return shape_meta
-
-
 
 def load_obs_encoder(shape_meta):
     """

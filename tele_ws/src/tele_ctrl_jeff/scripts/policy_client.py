@@ -23,7 +23,7 @@ class RequestClient:
         response = requests.post(url, json=payload, timeout=1000*60)
         return response.json()
 
-class CAPClient:
+class PolicyClient:
     """
     Client for Coarse-to-Fine inference
     """
@@ -38,6 +38,7 @@ class CAPClient:
         """
         Send inference request with goal and obs data
         """
+        # Params
         attempts = 0
         # Serialize obs data to JSON-compatible format
         obs = self.obs_format_amend(obs)
@@ -50,7 +51,6 @@ class CAPClient:
                 "agentview_image": obs["agentview_image"].tolist()
             }
         }
-        
         # Inference loop with retries
         while attempts < max_retries:
             response = None
@@ -72,9 +72,8 @@ class CAPClient:
         rgb_keys = ["agentview_image", "robot0_eye_in_hand_image"]
         lowdim_keys = ["robot0_eef_pos", "robot0_eef_quat", "robot0_gripper_qpos"]
         for key in rgb_keys:
-            # move channel last to channel first
-            # B,T,H,W,C -> B,T,C,H,W
-            # convert uint8 image to float32
+            # 🔥 Move channel last to channel first 🔥
+            # B,T,H,W,C -> B,T,C,H,W | convert uint8 image to float32
             obs[key] = np.moveaxis(obs[key],-1,2).astype(np.float32) / 255.
         for key in lowdim_keys:
             obs[key] = obs[key][:].astype(np.float32)
@@ -88,7 +87,7 @@ class CAPClient:
 
 if __name__ == "__main__":
     # Example usage
-    client = CAPClient()
+    client = PolicyClient()
     
     # Generate example obs data
     obs = dict()

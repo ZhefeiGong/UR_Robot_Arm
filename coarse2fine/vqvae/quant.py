@@ -3,7 +3,7 @@ import torch
 from torch import distributed as tdist, nn as nn
 from torch.nn import functional as F
 from typing import List, Optional, Sequence, Tuple, Union
-import utils.dist as dist
+import carp_utils.dist as dist
 
 # this file only provides the VectorQuantizer2 used in VQVAE
 __all__ = ['VectorQuantizer2',]
