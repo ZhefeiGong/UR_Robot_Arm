@@ -309,16 +309,14 @@ def _convert_robomimic_to_replay(store, shape_meta, dataset_path, abs_action, ro
                 )
                 assert this_data.shape == (n_steps,) + tuple(shape_meta['action']['shape'])
             else:
-
-                # 🔥 Quat to Rotation6d 🔥
-                if key == "robot0_eef_quat":
-                    this_data = this_data[..., [3, 0, 1, 2]]                        # xyzw(ori) -> wxyz(pt3d)
-                    this_data = rotation_transformer.forward(this_data)             # quat -> rotation6d
-                # 🔥 Grip to (-1,1) 🔥
-                elif key == "robot0_gripper_qpos":
-                    this_data = this_data*2-1                                       # [0,1](ori) -> [-1,1]
-                    assert (max(this_data) == 1.0) and (min(this_data) == -1.0)     # make sure it's belong to [-1,1]
-
+                # # 🔥 Quat to Rotation6d 🔥
+                # if key == "robot0_eef_quat":
+                #     this_data = this_data[..., [3, 0, 1, 2]]                        # xyzw(ori) -> wxyz(pt3d)
+                #     this_data = rotation_transformer.forward(this_data)             # quat -> rotation6d
+                # # 🔥 Grip to (-1,1) 🔥
+                # elif key == "robot0_gripper_qpos":
+                #     this_data = this_data*2-1                                       # [0,1](ori) -> [-1,1]
+                #     assert (max(this_data) == 1.0) and (min(this_data) == -1.0)     # make sure it's belong to [-1,1]
                 assert this_data.shape == (n_steps,) + tuple(shape_meta['obs'][key]['shape'])
             _ = data_group.array(
                 name=key,

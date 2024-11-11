@@ -13,6 +13,7 @@ from rtde_receive import RTDEReceiveInterface
 from rtde_io import RTDEIOInterface as RTDEIO
 import time
 import rospy
+import time
 import numpy as np
 from std_msgs.msg import Float64MultiArray
 
@@ -30,10 +31,11 @@ ROBOT_HOST = "192.168.2.6"
 GP_OPEN = 0
 GP_CLOSE = 1
 GP_CRITERIA = 0.5
-IS_VERBOSE = False
-IS_CHECK = False
+IS_VERBOSE = True
+IS_CHECK = True
 IS_SAVE = True
-MOVE_SPEED = 0.01
+MOVE_SPEED = 0.015
+IS_CARP = True
 
 """BOWL - 131
 blue -> red | grey
@@ -103,8 +105,12 @@ def run():
     gripper_status = GP_OPEN
 
     ### params
-    scene_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/carp/scene.jpg"
-    wrist_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/carp/wrist.jpg"
+    if IS_CARP:
+        scene_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/carp/scene.jpg"
+        wrist_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/carp/wrist.jpg"
+    else:
+        scene_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/dp/scene.jpg"
+        wrist_pth = "/home/robot/UR_Robot_Arm/tele_ws/src/tele_ctrl_jeff/img/dp/wrist.jpg"
 
     ### run
     while True:
@@ -142,7 +148,10 @@ def run():
 
         ### get the actions
         if IS_VERBOSE: ask_confirmation(prompt="we'll send the observation from model...")
+        # start_time =time.time()
         actions_pred = policy_client.predict_traj(obs)
+        # end_time =time.time()
+        # print(f'[INFO] inference time:{(end_time-start_time):.6f} s')
         actions_pred = np.array(actions_pred).reshape(-1,8)                         # [H,D] | pos(3) + rot(4) + grip(1)
         print_2d_arr('[INFO] robot action | pred : ', actions_pred)
 
@@ -157,14 +166,15 @@ def run():
             rtde_ctl.moveL(next_state, speed=MOVE_SPEED)
             
             ## gripper
-            if action[-1] > GP_CRITERIA:
+            if action[-1] > GP_CRITERIA and gripper_status == GP_OPEN:
                 gripper_status = GP_CLOSE
                 gripper.move(gripper.get_closed_position(), 255, 255)
-            elif gripper_status == GP_CLOSE:
+            if action[-1] < GP_CRITERIA and gripper_status == GP_CLOSE:
                 gripper_status = GP_OPEN
                 gripper.move(gripper.get_open_position(), 255, 255)
-        
-        
+            print(gripper_status)
+
+
 if __name__ == "__main__":
     run()
 

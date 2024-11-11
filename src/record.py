@@ -8,12 +8,13 @@ import time
 import numpy as np
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from datetime import datetime
 
 def run():
 
     # 
-    record_count = 0
-    root_output_path = "/home/robot/temp/VIDEO/CARP/bowl"
+    task_name = 'tiger' # cup | bowl | tiger
+    root_output_path = f"/home/robot/temp/VIDEO/DP/{task_name}"
 
     # Open the default camera (usually the first camera found, index 0)
     cap = cv2.VideoCapture(5, cv2.CAP_V4L2)
@@ -63,8 +64,8 @@ def run():
                 if not is_recording:
                     print("Start recording...")
                     is_recording = True
-                    filename = f"{root_output_path}/output_{record_count}.mp4"
-                    record_count += 1
+                    cur_time = datetime.now().strftime("%Y%m%d_%H%M")
+                    filename = f"{root_output_path}/{cur_time}.mp4"
                     out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'),fps,(desired_width, desired_height))
             if is_recording:
                 out.write(frame)
