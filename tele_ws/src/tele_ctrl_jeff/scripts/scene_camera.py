@@ -7,10 +7,12 @@ import time
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
-def image_publisher(camera_id=0):
+def image_publisher(camera_id=2):
     """
     @func : the publisher of camera node
     """
+
+    print("[INFO] scene camera is runnning...")
     
     rospy.init_node('scene_image_publisher_node', anonymous=True)
     image_pub = rospy.Publisher('camera/scene_image', Image, queue_size=10)
@@ -65,7 +67,7 @@ class SceneSubscriber:
 def test():
 
     # Open the default camera (usually the first camera found, index 0)
-    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(2, cv2.CAP_V4L2)
 
     if not cap.isOpened():
         print("Error: Could not open camera.")

@@ -15,7 +15,7 @@ from space_mouse import SpaceMouse
 from utils import axis_to_euler,axis_to_quat
 
 # define robot parameters
-ROBOT_HOST = "192.168.2.4"
+ROBOT_HOST = "192.168.2.6"
 
 GP_OPEN = 0
 GP_CLOSE = 1
@@ -56,7 +56,7 @@ def run():
                 # print("Current motion state" , motion_state)
                 
                 # send command to robot 
-                rtde_ctl.speedL(motion_state, acceleration = 1.0, time = 0.1) # adjust the acceleration if required | 1.5 | 1.0
+                rtde_ctl.speedL(motion_state, acceleration = 0.05, time = 0.05) # adjust the acceleration if required | 1.5 | 1.0
                 
                 # get tcp velocity of robot
                 actual_velocity = rtde_rcv.getActualTCPSpeed()

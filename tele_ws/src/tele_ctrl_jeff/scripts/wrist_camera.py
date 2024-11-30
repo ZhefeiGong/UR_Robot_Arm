@@ -7,10 +7,12 @@ import time
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
-def image_publisher(camera_id=2):
+def image_publisher(camera_id=0):
+    """
+    @func : the publisher of camera node
     """
 
-    """
+    print("[INFO] wrist camera is runnning...")
 
     rospy.init_node('wrist_image_publisher_node', anonymous=True)
     image_pub = rospy.Publisher('camera/wrist_image', Image, queue_size=10)
@@ -23,13 +25,13 @@ def image_publisher(camera_id=2):
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
 
     ### EXPOSURE
-    # # auto
-    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
-    # manual
-    exposure = -5.5
-    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
-    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
-    cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+    # auto
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+    # # manual
+    # exposure = -5.5
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
+    # cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
 
 
     if not cap.isOpened():
@@ -66,7 +68,7 @@ class WristSubscriber:
 def test():
 
     # Open the default camera (usually the first camera found, index 0)
-    cap = cv2.VideoCapture(2, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
     if not cap.isOpened():
         print("Error: Could not open camera.")
@@ -88,14 +90,14 @@ def test():
     print(f"Current resolution: {int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}")
     
     ### EXPOSURE
-    # # auto
-    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
-    # manual
-    exposure = -5.5
-    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
-    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
-    cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
-    print(f"Desired exposure: {cap.get(cv2.CAP_PROP_EXPOSURE)}")
+    # auto
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+    # # manual
+    # exposure = -5.5
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
+    # cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+    # print(f"Desired exposure: {cap.get(cv2.CAP_PROP_EXPOSURE)}")
     
     time.sleep(2)
 
