@@ -31,8 +31,8 @@ ROBOT_HOST = "192.168.2.6"
 GP_OPEN = 0
 GP_CLOSE = 1
 GP_CRITERIA = 0.5
-IS_VERBOSE = True
-IS_CHECK = True
+IS_VERBOSE = False
+IS_CHECK = False
 IS_SAVE = True
 MOVE_SPEED = 0.015
 IS_CARP = True
@@ -63,8 +63,8 @@ def given_data():
     obs=dict()
     obs['agentview_image'] = image_format_amend("/home/robot/UR_Robot_Arm/coarse2fine/data/scene1.jpg")[None,None,...]
     obs['robot0_eye_in_hand_image'] = image_format_amend("/home/robot/UR_Robot_Arm/coarse2fine/data/wrist1.jpg")[None,None,...]
-    obs['robot0_eef_pos'] = np.array([-0.36229283359785835,-0.4150547746810219,0.4619846199476397])[None,None,...]
-    obs['robot0_eef_quat'] = np.array([0.4246134752330147, 0.9042700809168371, -0.01994586432104633, 0.04001474610297329,])[None,None,...]
+    obs['robot0_eef_pos'] = np.array([-0.5370786233477692,-0.14595360977698918,0.49753826739803164])[None,None,...]
+    obs['robot0_eef_quat'] = np.array([-0.7295055052319397, -0.6835752261703961, 0.022747529127961453, 0.0054016590929929905,])[None,None,...]
     obs['robot0_gripper_qpos'] = np.array([0.0])[None,None,...]
     return obs
 
@@ -144,6 +144,8 @@ def run():
         obs['robot0_eef_pos'] = np.array(cart)[None,None,...]                       # [3,] -> [1,1,3,]
         obs['robot0_eef_quat'] = np.array(quat)[None,None,...]                      # [4,] -> [1,1,4,]
         obs['robot0_gripper_qpos'] = np.array([gripper_status])[None,None,...]      # [1,] -> [1,1,1,]
+        
+        # ### given data
         # obs = given_data()
 
         ### get the actions

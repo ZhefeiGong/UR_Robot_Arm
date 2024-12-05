@@ -13,11 +13,13 @@ from datetime import datetime
 def run():
 
     # 
-    task_name = 'tiger' # cup | bowl | tiger
-    root_output_path = f"/home/robot/temp/VIDEO/DP/{task_name}"
+    task_name = 'bowl' # cup | bowl
+    model_name = 'CARP' # CARP | DP
+    date_name = '1205'  # 
+    root_output_path = f"/home/robot/temp/VIDEO/{model_name}/{date_name}/{task_name}"
 
     # Open the default camera (usually the first camera found, index 0)
-    cap = cv2.VideoCapture(5, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(4, cv2.CAP_V4L2)
     if not cap.isOpened():
         print("Error: Could not open camera.")
         return
@@ -56,7 +58,10 @@ def run():
     
     # run
     while True:
+
         ret, frame = cap.read()
+        frame = cv2.rotate(frame, cv2.ROTATE_180) 
+
         if ret:
             cv2.imshow("Camera",blank_image)
             key = cv2.waitKey(1) & 0xFF 
@@ -81,7 +86,66 @@ def run():
     cap.release()
     cv2.destroyAllWindows()
 
+def test():
+
+    # Open the default camera (usually the first camera found, index 0)
+    cap = cv2.VideoCapture(4, cv2.CAP_V4L2)
+    cap.set(cv2.CAP_PROP_AUTO_WB, 1)
+
+    if not cap.isOpened():
+        print("Error: Could not open camera.")
+        return
+
+    # Verify if the resolution was set correctly
+    actual_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    actual_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    print(f"Actual resolution: {int(actual_width)}x{int(actual_height)}")
+
+    # Set desired resolution (e.g., 1280x720)
+    desired_width = 1920 # 1280 | 1920
+    desired_height = 1080 # 720 | 1080
+    cap.set(cv2.CAP_PROP_FPS, 30.0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    print(f"Desired resolution: {int(desired_width)}x{int(desired_height)}")
+    print(f"Current resolution: {int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}")
+    
+    ### EXPOSURE
+    # auto
+    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) # auto
+    # # manual
+    # exposure = -5.5
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0) 
+    # cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) # manual
+    # cap.set(cv2.CAP_PROP_EXPOSURE, 10000*2**exposure)
+    # print(f"Desired exposure: {cap.get(cv2.CAP_PROP_EXPOSURE)}")
+    
+    time.sleep(2)
+
+    while True:
+
+        ret, frame = cap.read()
+        # frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+        frame = cv2.rotate(frame, cv2.ROTATE_180) 
+
+        if not ret:
+            print("ERROR")
+
+        cv2.imshow("Camera",frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release the camera and close all OpenCV windows
+    cap.release()
+    cv2.destroyAllWindows()
+
+
 if __name__ == "__main__":
+    
     run()
 
+    # test()
+    
     

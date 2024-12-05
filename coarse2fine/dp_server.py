@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from dp_inference import build, infer
 
 ## load model 
-policy = build(ckpt_pth = "/home/robot/UR_Robot_Arm/coarse2fine/ckpt/dp-tiger-epoch=1100-val_loss=0.141.ckpt")
+policy = build(ckpt_pth = "/home/robot/UR_Robot_Arm/coarse2fine/ckpt/bowl/dp/epoch=0800-val_loss=0.038.ckpt")
 n_obs_steps = 1
 n_action_steps = 8
 

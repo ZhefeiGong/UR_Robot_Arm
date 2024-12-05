@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from carp_inference import build, infer
 
 ## load model 
-var, vae, normalizer = build(ckpt_pth = "/home/robot/UR_Robot_Arm/coarse2fine/ckpt/carp-tiger-ep_3800-accmean_38.37-acctail_38.43.pth")
+var, vae, normalizer = build(ckpt_pth = "/home/robot/UR_Robot_Arm/coarse2fine/ckpt/bowl/carp/ar-ep_3600-accmean_26.30-acctail_24.31.pth")
 n_obs_steps = 1
 n_action_steps = 8
 
