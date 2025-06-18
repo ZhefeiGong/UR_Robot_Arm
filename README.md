@@ -193,7 +193,7 @@ roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=/home/robot/ur5e_ws
 
 
 
-## ⚙️ Setting | Gripper | Robotiq-2f-85
+## 🤏 Setting | Gripper | Robotiq-2f-85
 
 >[manual](https://assets.robotiq.com/website-assets/support_documents/document/2F-85_2F-140_Instruction_Manual_CB-Series_PDF_20190122.pdf)
 
@@ -255,7 +255,7 @@ rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
 ```
 
 
-## ⚙️ Setting | Teleoperation | 3D Connexion
+## 🖲️ Setting | Teleoperation | 3D Connexion
 
 >refer to [UR-Teleop](https://github.com/keitheorem/3DConnexion-Spacemouse-UR-Teleop) | [DiffsuionPolicy](https://github.com/real-stanford/diffusion_policy/tree/main/diffusion_policy/real_world)
 
@@ -282,7 +282,7 @@ pip install ur_rtde
 In the `spnav` library, `PyCObject_AsVoidPtr` is deprecated. `find . -name spnav` on terminal to find `spnav` folder. Replace all instances of `PyCObject_AsVoidPtr` with `PyCapsule_GetPointer` in `init.py`
 
 
-## ⚙️ Coding
+## 💻 Coding
 
 >ROS | Robotics Operating System | [tutorial](https://wiki.ros.org/rospy_tutorials/Tutorials)
 
@@ -319,23 +319,16 @@ rqtgraph
 ```
 
 
-### 🔧 Code Space
-
-* 🔥 [Repository](https://github.com/ZhefeiGong/UR_Robot_Arm) 🔥
-	1. ubuntu 20.04
-	2. ur5e + robotiq-2f-85
-
-
 ## 📖 Reference
 
-#### 🔩 Drive with `ur-ros`
+### 🔩 Drive with `ur-ros` ➡️ `ur5e_ws`
 * [universal_robots_ros_driver](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver)
 
-#### 🔩 Drive with `python-urx`
+### 🔩 Drive with `python-urx`
 * [pythonb-urx](https://github.com/SintefManufacturing/python-urx)
 * [guideline-zh](https://blog.csdn.net/rocachilles/article/details/102667474)
 
-#### 🔩 Drive with `ur_rtde`
+### 🔩 Drive with `ur_rtde` ➡️ `tele_ws`
 * [python-api](https://pypi.org/project/ur-rtde/)
 * [guideline](https://sdurobotics.gitlab.io/ur_rtde/index.html)
 
