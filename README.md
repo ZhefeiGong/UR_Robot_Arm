@@ -6,15 +6,15 @@
 
 >[manual-en](https://www.universal-robots.com/manuals/EN/PDF/SW5_19/user-manual-UR5e-PDF_online/710-965-00_UR5e_User_Manual_en_Global.pdf) | [manual-zh](https://s3-eu-west-1.amazonaws.com/ur-support-site/165903/99419_UR5e_User_Manual_zh_Global.pdf)
 
-### 🔩 Drive with Source Ros
+### 🔩 Drive with Source Ros ➡️ `ur5e_ws`
 
-##### 1. Environment
+#### 1. Environment
 * UR5e
 * Ubuntu 20.04.6
 * Noetic
 * Python3.8
 
-##### 2. Intall ROS | Noetic | Ubuntu 20.04 
+#### 2. Intall ROS | Noetic | Ubuntu 20.04 
 [Neotic Installation](https://wiki.ros.org/noetic/Installation/Ubuntu#Ubuntu_install_of_ROS_Noetic)
 
 ```bash
@@ -48,13 +48,13 @@ sudo rosdep init
 rosdep update
 ```
 
-##### 3. Install moveit 
+#### 3. Install moveit 
 
 ```bash
 sudo apt install ros-noetic-moveit
 ```
 
-##### 4. Install universal_robots_ros_driver | universal_robot
+#### 4. Install universal_robots_ros_driver | universal_robot
 
 [universal_robots_ros_driver](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver) | [dirver_intro](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/tree/master/ur_robot_driver)| [universal_robot](https://github.com/ros-industrial/universal_robot) | [real-time / linux](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/real_time.md)
 
@@ -103,7 +103,7 @@ $ sudo gedit ~/.bashrc
 #@NOTICE : remove the initialization of anaconda or any other environments
 ```
 
-##### 5. Simulation Test
+#### 5. Simulation Test
 
 ```bash
 # simulate the robot and environment in Gazebo
@@ -114,12 +114,12 @@ roslaunch ur5e_moveit_config moveit_planning_execution.launch sim:=true
 roslaunch ur5e_moveit_config moveit_rviz.launch
 ```
 
-##### 6. Install External-Control on robot | link PC and robot through TCP-IP
+#### 6. Install External-Control on robot | link PC and robot through TCP-IP
 
 [External-Control](https://github.com/UniversalRobots/Universal_Robots_ExternalControl_URCap/releases) | [InstallGuide](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/install_urcap_e_series.md)
 
 ```python
-###### CONNECT ROBOT and PC ######
+#### CONNECT ROBOT and PC ####
 # the PC IPv4 
 address : 192.168.1.10
 netmask : 255.255.255.0
@@ -130,7 +130,7 @@ netmask : 255.255.255.0
 gateway : 192.168.1.1
 ```
 
-##### 7. Communicate with the Robot | rs485
+#### 7. Communicate with the Robot | rs485
 
 [rs485](https://github.com/UniversalRobots/Universal_Robots_ToolComm_Forwarder_URCap/releases) | [Communication](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/setup_tool_communication.md) 
 
@@ -145,7 +145,7 @@ rosrun ur_robot_driver tool_communication
 rosrun imaginary_drivers rs485_node device:=/tmp/ttyUR
 ```
 
-##### 8. Prepare the ROS PC
+#### 8. Prepare the ROS PC
 
 Extract calibration information
 
@@ -153,7 +153,7 @@ Extract calibration information
 roslaunch ur_calibration calibration_correction.launch robot_ip:=192.168.1.60 target_filename:="home/robot/my_robot_calibration.yaml"
 ```
 
-##### 9. Get Start
+#### 9. Get Start
 
 [usage examples](https://github.com/UniversalRobots/Universal_Robots_ROS_Driver/blob/master/ur_robot_driver/doc/usage_example.md)	
 
@@ -164,16 +164,16 @@ roslaunch ur_calibration calibration_correction.launch robot_ip:=192.168.1.60 ta
 * Control the robot using MoveIt
 
 ```bash
-###### Visualizing ######
+#### Visualizing ####
 # launch the driver
 roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml
 # in another terminal run rviz for visualization
 roslaunch ur_robot_driver example_rviz.launch
 
-###### Controling ######
+#### Controling ####
 rosrun ur_robot_driver test_move
 
-###### Control the robot using Moveit ######
+#### Control the robot using Moveit ####
 roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.1.60 kinematics_config:=/home/robot/my_robot_calibration.yaml
 
 roslaunch ur5e_moveit_config moveit_planning_execution.launch
@@ -187,7 +187,7 @@ roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=/home/robot/ur5e_ws
 >[pythonb-urx](https://github.com/SintefManufacturing/python-urx) | [guideline-zh](https://blog.csdn.net/rocachilles/article/details/102667474)
 
 
-### 🔩 Drive with ur_rtde
+### 🔩 Drive with ur_rtde ➡️ `tele_ws`
 
 >[python-api](https://pypi.org/project/ur-rtde/) | [guideline](https://sdurobotics.gitlab.io/ur_rtde/index.html)
 
@@ -195,7 +195,7 @@ roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=/home/robot/ur5e_ws
 
 ## 🤏 Setting | Gripper | Robotiq-2f-85
 
->[manual](https://assets.robotiq.com/website-assets/support_documents/document/2F-85_2F-140_Instruction_Manual_CB-Series_PDF_20190122.pdf)
+>[manual](https://assets.robotiq.com/website-assets/support_documents/document/2F-85_2F-140_Instruction_Manual_CB-Series_PDF_20190122.pdf) | through `ur-ros`
 
 
 ### 1. Robotiq Environment
@@ -257,7 +257,7 @@ rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
 
 ## 🖲️ Setting | Teleoperation | 3D Connexion
 
->refer to [UR-Teleop](https://github.com/keitheorem/3DConnexion-Spacemouse-UR-Teleop) | [DiffsuionPolicy](https://github.com/real-stanford/diffusion_policy/tree/main/diffusion_policy/real_world)
+>refer to [UR-Teleop](https://github.com/keitheorem/3DConnexion-Spacemouse-UR-Teleop) | [DiffsuionPolicy](https://github.com/real-stanford/diffusion_policy/tree/main/diffusion_policy/real_world) | through `ur_rtde`
 
 ### 1. Env Setting
 * `ur_rtde`
